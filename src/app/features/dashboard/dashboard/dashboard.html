@@ -1,0 +1,50 @@
+<app-page-header
+  [title]="'Dashboard'"
+  [subtitle]="'Resumen financiero — ' + period.getMonthLabel()"
+/>
+
+@if (loading()) {
+  <app-loading-state />
+} @else if (kpis(); as k) {
+  <div class="kpi-grid">
+    <app-kpi-card title="Ingresos del mes" [value]="k.totalIncome" icon="trending_up" accent="success" />
+    <app-kpi-card title="Gastos fijos" [value]="k.fixedExpenses" icon="home" />
+    <app-kpi-card title="Gastos variables" [value]="k.variableExpenses" icon="receipt" />
+    <app-kpi-card title="Comisión Fran" [value]="k.franCommission" icon="person" accent="warning" />
+    <app-kpi-card title="Ganancia neta" [value]="k.netProfit" icon="account_balance_wallet" accent="success" />
+    <app-kpi-card title="Rentabilidad" [value]="k.profitabilityPct" icon="percent" format="percent" />
+  </div>
+
+  <div class="info-cards">
+    <div class="info-card break-even">
+      <mat-icon>flag</mat-icon>
+      <div>
+        <h3>Punto de equilibrio</h3>
+        <p>Necesitás facturar <strong>{{ k.breakEvenAmount | currencyArs }}</strong> para cubrir todos los costos fijos.</p>
+      </div>
+    </div>
+    <div class="info-card">
+      <mat-icon>hotel</mat-icon>
+      <div>
+        <h3>Indicadores</h3>
+        <p>Ticket promedio: <strong>{{ k.avgTicket | currencyArs }}</strong></p>
+        <p>Ganancia por noche: <strong>{{ k.profitPerNight | currencyArs }}</strong></p>
+        <p>Reservas: <strong>{{ k.reservationCount }}</strong> · Noches: <strong>{{ k.totalNights }}</strong></p>
+      </div>
+    </div>
+  </div>
+
+  @if (ranking().length > 0) {
+    <div class="ranking-card">
+      <h3>Propiedad más rentable</h3>
+      <ol>
+        @for (item of ranking(); track item.property_name) {
+          <li>
+            <span>{{ item.property_name }}</span>
+            <strong>{{ item.net_profit | currencyArs }}</strong>
+          </li>
+        }
+      </ol>
+    </div>
+  }
+}

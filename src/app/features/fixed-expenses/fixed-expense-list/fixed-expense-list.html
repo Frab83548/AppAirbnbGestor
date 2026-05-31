@@ -1,0 +1,52 @@
+<app-page-header title="Gastos Fijos" subtitle="Costos recurrentes mensuales por propiedad">
+  <button mat-stroked-button [disabled]="duplicating()" (click)="duplicatePrevious()">
+    <mat-icon>content_copy</mat-icon>
+    Duplicar mes anterior
+  </button>
+  <button mat-flat-button color="primary" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    Nuevo registro
+  </button>
+</app-page-header>
+
+@if (loading()) {
+  <app-loading-state />
+} @else if (expenses().length === 0) {
+  <app-empty-state
+    icon="calendar_month"
+    title="Sin gastos fijos"
+    message="Registrá los costos mensuales o duplicá el mes anterior."
+  >
+    <button mat-flat-button color="primary" (click)="openCreate()">Agregar gastos fijos</button>
+  </app-empty-state>
+} @else {
+  <div class="table-card">
+    <table mat-table [dataSource]="expenses()">
+      <ng-container matColumnDef="property">
+        <th mat-header-cell *matHeaderCellDef>Propiedad</th>
+        <td mat-cell *matCellDef="let e"><strong>{{ e.propertyName }}</strong></td>
+      </ng-container>
+      <ng-container matColumnDef="total">
+        <th mat-header-cell *matHeaderCellDef>Total</th>
+        <td mat-cell *matCellDef="let e">{{ e.total | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="building">
+        <th mat-header-cell *matHeaderCellDef>Expensas</th>
+        <td mat-cell *matCellDef="let e">{{ e.buildingExpenses | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="electricity">
+        <th mat-header-cell *matHeaderCellDef>Luz</th>
+        <td mat-cell *matCellDef="let e">{{ e.electricity | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let e">
+          <button mat-icon-button (click)="openEdit(e)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button color="warn" (click)="deleteExpense(e)"><mat-icon>delete</mat-icon></button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+}

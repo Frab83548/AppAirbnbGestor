@@ -1,0 +1,57 @@
+.shell-container {
+  height: 100vh;
+  background: var(--surface-bg);
+}
+
+.shell-sidenav {
+  width: 260px;
+  background: var(--surface-sidebar);
+  border-right: 1px solid var(--border-color);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  font-weight: 700;
+  font-size: 1.125rem;
+  border-bottom: 1px solid var(--border-color);
+
+  mat-icon {
+    color: var(--accent-color);
+  }
+}
+
+a.active {
+  background: var(--accent-bg);
+  color: var(--accent-color);
+
+  mat-icon {
+    color: var(--accent-color);
+  }
+}
+
+.shell-toolbar {
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.toolbar-spacer {
+  flex: 1;
+}
+
+.shell-content {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  .shell-content {
+    padding: 1rem;
+  }
+}

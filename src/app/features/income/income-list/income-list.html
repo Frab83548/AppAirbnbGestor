@@ -1,0 +1,60 @@
+<app-page-header title="Ingresos" subtitle="Reservas e ingresos por estadía">
+  <button mat-flat-button color="primary" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    Nuevo ingreso
+  </button>
+</app-page-header>
+
+@if (loading()) {
+  <app-loading-state />
+} @else if (reservations().length === 0) {
+  <app-empty-state icon="payments" title="Sin ingresos" message="Registrá una reserva para este período.">
+    <button mat-flat-button color="primary" (click)="openCreate()">Registrar ingreso</button>
+  </app-empty-state>
+} @else {
+  <div class="summary-row">
+    <span>Total: <strong>{{ totals().income | currencyArs }}</strong></span>
+    <span>Comisión Fran: <strong>{{ totals().commission | currencyArs }}</strong></span>
+    <span>Ganancia neta: <strong>{{ totals().net | currencyArs }}</strong></span>
+  </div>
+
+  <div class="table-card">
+    <table mat-table [dataSource]="reservations()">
+      <ng-container matColumnDef="checkInDate">
+        <th mat-header-cell *matHeaderCellDef>Ingreso</th>
+        <td mat-cell *matCellDef="let r">{{ r.checkInDate | date: 'dd/MM/yyyy' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="property">
+        <th mat-header-cell *matHeaderCellDef>Propiedad</th>
+        <td mat-cell *matCellDef="let r">{{ r.propertyName }}</td>
+      </ng-container>
+      <ng-container matColumnDef="platform">
+        <th mat-header-cell *matHeaderCellDef>Plataforma</th>
+        <td mat-cell *matCellDef="let r">{{ platformLabel(r.platform) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="amountCharged">
+        <th mat-header-cell *matHeaderCellDef>Cobrado</th>
+        <td mat-cell *matCellDef="let r">{{ r.amountCharged | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="franCommission">
+        <th mat-header-cell *matHeaderCellDef>Com. Fran</th>
+        <td mat-cell *matCellDef="let r">{{ r.franCommission | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="netProfit">
+        <th mat-header-cell *matHeaderCellDef>Gan. Neta</th>
+        <td mat-cell *matCellDef="let r">{{ r.netProfit | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let r">
+          <button mat-icon-button (click)="openEdit(r)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button color="warn" (click)="deleteReservation(r)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+}

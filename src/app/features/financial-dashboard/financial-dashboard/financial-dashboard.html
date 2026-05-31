@@ -1,0 +1,68 @@
+<app-page-header
+  title="Dashboard Financiero"
+  [subtitle]="'Análisis visual — ' + period.getMonthLabel()"
+/>
+
+@if (loading()) {
+  <app-loading-state />
+} @else {
+  <div class="charts-grid">
+    <div class="chart-card">
+      <h3>Evolución mensual</h3>
+      @if (lineChart(); as opts) {
+        <apx-chart
+          [series]="opts.series!"
+          [chart]="opts.chart!"
+          [xaxis]="opts.xaxis!"
+          [stroke]="opts.stroke!"
+          [dataLabels]="opts.dataLabels!"
+          [yaxis]="opts.yaxis!"
+          [legend]="opts.legend!"
+          [colors]="opts.colors!"
+        />
+      }
+    </div>
+
+    <div class="chart-card">
+      <h3>Rentabilidad por propiedad</h3>
+      @if (barChart(); as opts) {
+        <apx-chart
+          [series]="opts.series!"
+          [chart]="opts.chart!"
+          [xaxis]="opts.xaxis!"
+          [plotOptions]="opts.plotOptions!"
+          [dataLabels]="opts.dataLabels!"
+          [colors]="opts.colors!"
+        />
+      }
+    </div>
+
+    <div class="chart-card">
+      <h3>Distribución de gastos</h3>
+      @if (pieChart(); as opts) {
+        <apx-chart
+          [series]="opts.series!"
+          [chart]="opts.chart!"
+          [labels]="opts.labels!"
+          [legend]="opts.legend!"
+          [fill]="opts.fill!"
+          [colors]="opts.colors!"
+        />
+      }
+    </div>
+
+    <div class="chart-card">
+      <h3>Comparativa anual</h3>
+      @if (annualChart(); as opts) {
+        <apx-chart
+          [series]="opts.series!"
+          [chart]="opts.chart!"
+          [xaxis]="opts.xaxis!"
+          [plotOptions]="opts.plotOptions!"
+          [dataLabels]="opts.dataLabels!"
+          [colors]="opts.colors!"
+        />
+      }
+    </div>
+  </div>
+}

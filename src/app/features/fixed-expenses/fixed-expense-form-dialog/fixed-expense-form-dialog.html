@@ -1,0 +1,32 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Editar gastos fijos' : 'Nuevos gastos fijos' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="form-grid">
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Propiedad</mat-label>
+      <mat-select formControlName="propertyId">
+        @for (p of properties(); track p.id) {
+          <mat-option [value]="p.id">{{ p.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Mes</mat-label>
+      <input matInput type="number" min="1" max="12" formControlName="month" />
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Año</mat-label>
+      <input matInput type="number" formControlName="year" />
+    </mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Expensas</mat-label><input matInput type="number" formControlName="buildingExpenses" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Luz</mat-label><input matInput type="number" formControlName="electricity" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Agua</mat-label><input matInput type="number" formControlName="water" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Gas</mat-label><input matInput type="number" formControlName="gas" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Internet</mat-label><input matInput type="number" formControlName="internet" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Municipalidad</mat-label><input matInput type="number" formControlName="municipality" /></mat-form-field>
+    <mat-form-field appearance="outline"><mat-label>Otros</mat-label><input matInput type="number" formControlName="others" /></mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancelar</button>
+  <button mat-flat-button color="primary" [disabled]="loading()" (click)="save()">Guardar</button>
+</mat-dialog-actions>

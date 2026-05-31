@@ -1,0 +1,42 @@
+<app-page-header
+  title="Reportes"
+  [subtitle]="'Exportaciones — ' + period.getMonthLabel()"
+/>
+
+<div class="reports-grid">
+  <mat-card class="report-card">
+    <mat-icon>picture_as_pdf</mat-icon>
+    <h3>Reporte mensual PDF</h3>
+    <p>KPIs, ingresos y gastos del mes seleccionado.</p>
+    <button mat-flat-button color="primary" [disabled]="loading()" (click)="exportPdfMonthly()">
+      Descargar PDF
+    </button>
+  </mat-card>
+
+  <mat-card class="report-card">
+    <mat-icon>picture_as_pdf</mat-icon>
+    <h3>Reporte anual PDF</h3>
+    <p>Consolidado del año {{ period.year() }}.</p>
+    <button mat-flat-button color="primary" [disabled]="loading()" (click)="exportPdfAnnual()">
+      Descargar PDF
+    </button>
+  </mat-card>
+
+  <mat-card class="report-card">
+    <mat-icon>table_chart</mat-icon>
+    <h3>Exportación Excel</h3>
+    <p>Hojas: Resumen, Ingresos, Gastos Variables y Fijos.</p>
+    <button mat-stroked-button [disabled]="loading()" (click)="exportExcel()">
+      Descargar Excel
+    </button>
+  </mat-card>
+
+  <mat-card class="report-card">
+    <mat-icon>download</mat-icon>
+    <h3>Exportación CSV</h3>
+    <p>Ingresos del mes en formato CSV.</p>
+    <button mat-stroked-button [disabled]="loading()" (click)="exportCsv()">
+      Descargar CSV
+    </button>
+  </mat-card>
+</div>

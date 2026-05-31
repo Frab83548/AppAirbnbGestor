@@ -1,0 +1,46 @@
+<app-page-header title="Gastos Variables" subtitle="Costos operativos por propiedad">
+  <button mat-flat-button color="primary" (click)="openCreate()">
+    <mat-icon>add</mat-icon>
+    Nuevo gasto
+  </button>
+</app-page-header>
+
+@if (loading()) {
+  <app-loading-state />
+} @else if (expenses().length === 0) {
+  <app-empty-state icon="receipt_long" title="Sin gastos variables" message="No hay gastos en este período." />
+} @else {
+  <div class="table-card">
+    <table mat-table [dataSource]="expenses()">
+      <ng-container matColumnDef="expenseDate">
+        <th mat-header-cell *matHeaderCellDef>Fecha</th>
+        <td mat-cell *matCellDef="let e">{{ e.expenseDate | date: 'dd/MM/yyyy' }}</td>
+      </ng-container>
+      <ng-container matColumnDef="property">
+        <th mat-header-cell *matHeaderCellDef>Propiedad</th>
+        <td mat-cell *matCellDef="let e">{{ e.propertyName }}</td>
+      </ng-container>
+      <ng-container matColumnDef="category">
+        <th mat-header-cell *matHeaderCellDef>Categoría</th>
+        <td mat-cell *matCellDef="let e">{{ categoryLabel(e.category) }}</td>
+      </ng-container>
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Descripción</th>
+        <td mat-cell *matCellDef="let e">{{ e.description }}</td>
+      </ng-container>
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>Monto</th>
+        <td mat-cell *matCellDef="let e">{{ e.amount | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let e">
+          <button mat-icon-button (click)="openEdit(e)"><mat-icon>edit</mat-icon></button>
+          <button mat-icon-button color="warn" (click)="deleteExpense(e)"><mat-icon>delete</mat-icon></button>
+        </td>
+      </ng-container>
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+  </div>
+}

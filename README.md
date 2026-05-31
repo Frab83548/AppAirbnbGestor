@@ -28,7 +28,13 @@ Mini ERP financiero para administrar la rentabilidad de propiedades de alquilere
 npm install
 ```
 
-2. Editar [`src/environments/environment.development.ts`](src/environments/environment.development.ts):
+2. Copiar el ejemplo y completar credenciales de Supabase:
+
+```bash
+cp src/environments/environment.development.example.ts src/environments/environment.development.ts
+```
+
+Editar [`src/environments/environment.development.ts`](src/environments/environment.development.ts) (este archivo **no** se sube a Git):
 
 ```typescript
 export const environment = {
@@ -82,6 +88,41 @@ npm run build
 ```
 
 Salida en `dist/app-finanzas/`.
+
+## Importar datos desde Excel (→ SQL)
+
+Los datos **no** van hardcodeados en el repo. El script lee tu `.xlsx` y genera un `.sql` para ejecutar en Supabase.
+
+```bash
+# Un departamento (todos los meses del config)
+npm run import:excel -- "C:\ruta\Departamento Trejo.xlsx" --config scripts/excel-import.trejo.config.json
+
+# Abril + Mayo de los 3 departamentos (busca Excel en Downloads)
+npm run import:abril-mayo
+```
+
+Genera SQL en `output/` (gitignored). Luego:
+
+1. Supabase → **SQL Editor**
+2. Pegar el contenido del archivo generado (`output/todos_abril_mayo_import.sql` o el individual)
+3. **Run**
+
+Configs por propiedad en `scripts/excel-import.*.config.json` y manifest en `scripts/departments.manifest.json` (solo estructura, no datos).
+
+## Deploy en Vercel
+
+1. Conectar repo [AppAirbnbGestor](https://github.com/Frab83548/AppAirbnbGestor) en Vercel
+2. Variables de entorno en Vercel → Settings → Environment Variables:
+
+| Variable | Valor |
+|----------|--------|
+| `SUPABASE_URL` | `https://pxabohgqaialclxczfrq.supabase.co` |
+| `SUPABASE_ANON_KEY` | tu anon public key |
+
+3. Build command: `npm run build:vercel` (ya configurado en `vercel.json`)
+4. En Supabase → Authentication → URL Configuration, agregar tu dominio Vercel:
+   - Site URL: `https://tu-app.vercel.app`
+   - Redirect URLs: `https://tu-app.vercel.app/**`
 
 ## Usuarios y roles
 

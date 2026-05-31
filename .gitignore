@@ -44,5 +44,9 @@ Thumbs.db
 
 # Local Supabase credentials (use environment.development.example.ts)
 src/environments/environment.development.ts
+src/environments/environment.production.ts
 .env
 .env.local
+
+# SQL generado desde Excel (no commitear)
+output/

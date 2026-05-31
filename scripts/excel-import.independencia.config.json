@@ -1,0 +1,28 @@
+{
+  "propertyName": "Departamento Independencia",
+  "platform": "directo",
+  "incomeSheets": [
+    {
+      "sheet": "GanaciasAbril",
+      "months": [4],
+      "columns": { "date": 0, "amount": 1, "cleaning": 5, "notes": 6 }
+    },
+    {
+      "sheet": "GananciasMayo",
+      "months": [5],
+      "columns": { "date": 0, "amount": 1, "cleaning": 5, "notes": 6 }
+    }
+  ],
+  "fixedExpenseSheets": {
+    "prefix": "Gastos",
+    "monthNames": {
+      "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5,
+      "Junio": 6, "Julio": 7, "Agosto": 8, "Septiembre": 9,
+      "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+    },
+    "columns": {
+      "building": 0, "water": 1, "electricity": 2, "municipality": 3, "internet": 4
+    },
+    "dataRow": 1
+  }
+}

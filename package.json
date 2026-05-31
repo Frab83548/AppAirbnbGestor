@@ -5,6 +5,9 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:vercel": "node scripts/generate-env.mjs && ng build --configuration production",
+    "import:excel": "node scripts/excel-to-sql.mjs",
+    "import:abril-mayo": "node scripts/import-abril-mayo.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },

@@ -5,15 +5,23 @@ import { AuthService } from './auth.service';
 export const authGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  const session = await auth.getSession();
-  if (session) return true;
+  try {
+    const session = await auth.getSession();
+    if (session) return true;
+  } catch (err) {
+    console.error('Error de autenticación:', err);
+  }
   return router.createUrlTree(['/login']);
 };
 
 export const guestGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  const session = await auth.getSession();
-  if (!session) return true;
-  return router.createUrlTree(['/dashboard']);
+  try {
+    const session = await auth.getSession();
+    if (!session) return true;
+    return router.createUrlTree(['/dashboard']);
+  } catch {
+    return true;
+  }
 };

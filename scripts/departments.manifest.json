@@ -1,0 +1,24 @@
+[
+  {
+    "id": "trejo",
+    "config": "scripts/excel-import.trejo.config.json",
+    "excelFiles": ["Departamento Trejo.xlsx"]
+  },
+  {
+    "id": "independencia",
+    "config": "scripts/excel-import.independencia.config.json",
+    "excelFiles": [
+      "Departamento Independencia.xlsx",
+      "Independencia.xlsx"
+    ]
+  },
+  {
+    "id": "pasaje",
+    "config": "scripts/excel-import.pasaje.config.json",
+    "excelFiles": [
+      "Departamento Pasaje españa.xlsx",
+      "Deapartamento Pasaje españa.xlsx",
+      "Pasaje españa.xlsx"
+    ]
+  }
+]

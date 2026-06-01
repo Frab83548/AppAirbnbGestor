@@ -26,3 +26,7 @@ enable_signup = false
 [auth.email]
 enable_signup = false
 enable_confirmations = false
+
+# Webhook de Telegram: sin verificacion de JWT (Telegram no envia un JWT de Supabase).
+[functions.telegram-bot]
+verify_jwt = false

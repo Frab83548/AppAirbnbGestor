@@ -49,3 +49,6 @@ src/environments/environment.development.ts
 
 # SQL generado desde Excel (no commitear)
 output/
+
+# Supabase CLI (archivos temporales locales)
+supabase/.temp/

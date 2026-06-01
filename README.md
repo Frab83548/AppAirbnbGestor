@@ -127,3 +127,52 @@ Configs por propiedad en `scripts/excel-import.*.config.json` y manifest en `scr
 ## Usuarios y roles
 
 Workspace compartido: todos los usuarios autenticados ven y editan el mismo portafolio. La tabla `profiles` incluye roles (`admin`, `member`, `viewer`) preparados para políticas RLS futuras.
+
+## Bot de Telegram (ingresos y gastos)
+
+Un bot de Telegram recibe **texto, audios o fotos** de ingresos/gastos, los interpreta con OpenAI (transcripción + visión + extracción estructurada), pide confirmación y guarda en Supabase. Corre como [Edge Function](supabase/functions/telegram-bot/) (Deno), no en el frontend.
+
+### Flujo
+
+1. El usuario manda un mensaje (texto / audio / foto) al bot.
+2. La función valida el secret del webhook y que el `telegram_id` esté en la whitelist.
+3. OpenAI extrae: tipo (ingreso/gasto), propiedad, monto, fecha, categoría/plataforma.
+4. El bot responde un resumen con botones **Confirmar / Cancelar**.
+5. Al confirmar, inserta en `reservations` (ingreso) o `variable_expenses` (gasto).
+
+### Setup
+
+1. Ejecutar la migración [`supabase/migrations/000003_telegram_integration.sql`](supabase/migrations/000003_telegram_integration.sql) en el SQL Editor.
+2. Crear el bot con [@BotFather](https://t.me/BotFather) y copiar el `TELEGRAM_BOT_TOKEN`.
+3. Inventar un `TELEGRAM_WEBHOOK_SECRET` (string aleatorio) y tener una `OPENAI_API_KEY`.
+4. Cargar los usuarios autorizados (obtené tu `telegram_id` con [@userinfobot](https://t.me/userinfobot)):
+
+```sql
+insert into telegram_allowed_users (telegram_id, profile_id, full_name)
+values (123456789, '<UUID de profiles>', 'Francisco');
+```
+
+5. Configurar los secrets y desplegar la función:
+
+```bash
+supabase secrets set TELEGRAM_BOT_TOKEN=xxx TELEGRAM_WEBHOOK_SECRET=xxx OPENAI_API_KEY=sk-xxx
+supabase functions deploy telegram-bot --no-verify-jwt
+```
+
+`SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` ya están disponibles automáticamente en el entorno de la función.
+
+6. Registrar el webhook (reemplazar `<PROJECT_REF>`, `<TOKEN>` y `<SECRET>`):
+
+```bash
+curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<PROJECT_REF>.functions.supabase.co/telegram-bot&secret_token=<SECRET>"
+```
+
+### Uso
+
+Escribirle al bot, por ejemplo:
+
+- `Gasto de limpieza 8000 en Trejo hoy`
+- `Ingreso 95000 en Independencia por Airbnb, check-in 5/6 check-out 8/6`
+- Un audio diciendo lo mismo, o una foto de un comprobante.
+
+El bot responde un resumen y guarda solo al tocar **Confirmar**.

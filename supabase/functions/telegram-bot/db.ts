@@ -1,0 +1,158 @@
+// Acceso a la base con service_role (bypassa RLS). Solo se usa dentro de la
+// Edge Function, nunca expuesto al cliente.
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import type { ParsedRecord } from "./openai.ts";
+
+let cached: SupabaseClient | null = null;
+
+export function getClient(): SupabaseClient {
+  if (cached) return cached;
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) {
+    throw new Error("SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY no configurados");
+  }
+  cached = createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  return cached;
+}
+
+export interface AllowedUser {
+  telegram_id: number;
+  profile_id: string | null;
+  full_name: string;
+}
+
+export async function getAllowedUser(
+  telegramId: number,
+): Promise<AllowedUser | null> {
+  const { data } = await getClient()
+    .from("telegram_allowed_users")
+    .select("telegram_id, profile_id, full_name")
+    .eq("telegram_id", telegramId)
+    .maybeSingle();
+  return (data as AllowedUser) ?? null;
+}
+
+export interface Property {
+  id: string;
+  name: string;
+}
+
+export async function getProperties(): Promise<Property[]> {
+  const { data } = await getClient()
+    .from("properties")
+    .select("id, name");
+  return (data as Property[]) ?? [];
+}
+
+// Match de propiedad: exacto (case-insensitive) y luego por inclusion de
+// substring en cualquier direccion.
+export function matchProperty(
+  name: string | null,
+  properties: Property[],
+): Property | null {
+  if (!name) return null;
+  const norm = (s: string) => s.trim().toLowerCase();
+  const target = norm(name);
+  const exact = properties.find((p) => norm(p.name) === target);
+  if (exact) return exact;
+  const partial = properties.find(
+    (p) => norm(p.name).includes(target) || target.includes(norm(p.name)),
+  );
+  return partial ?? null;
+}
+
+export interface Draft {
+  id: string;
+  telegram_id: number;
+  chat_id: number;
+  kind: "ingreso" | "gasto";
+  payload: ParsedRecord & { property_id: string; property_name: string };
+}
+
+export async function saveDraft(
+  telegramId: number,
+  chatId: number,
+  kind: "ingreso" | "gasto",
+  payload: Record<string, unknown>,
+): Promise<string> {
+  const { data, error } = await getClient()
+    .from("telegram_drafts")
+    .insert({ telegram_id: telegramId, chat_id: chatId, kind, payload })
+    .select("id")
+    .single();
+  if (error) throw new Error(`No se pudo guardar el borrador: ${error.message}`);
+  return (data as { id: string }).id;
+}
+
+export async function getDraft(id: string): Promise<Draft | null> {
+  const { data } = await getClient()
+    .from("telegram_drafts")
+    .select("id, telegram_id, chat_id, kind, payload")
+    .eq("id", id)
+    .maybeSingle();
+  return (data as Draft) ?? null;
+}
+
+export async function deleteDraft(id: string): Promise<void> {
+  await getClient().from("telegram_drafts").delete().eq("id", id);
+}
+
+export async function insertExpense(
+  draft: Draft,
+  createdBy: string | null,
+): Promise<void> {
+  const p = draft.payload;
+  const { error } = await getClient().from("variable_expenses").insert({
+    property_id: p.property_id,
+    expense_date: p.fecha,
+    category: p.categoria ?? "otros",
+    description: p.descripcion ?? "",
+    amount: p.monto,
+    created_by: createdBy,
+    updated_by: createdBy,
+  });
+  if (error) throw new Error(`No se pudo guardar el gasto: ${error.message}`);
+}
+
+export async function insertReservation(
+  draft: Draft,
+  createdBy: string | null,
+): Promise<void> {
+  const p = draft.payload;
+  const checkIn = p.check_in ?? p.fecha;
+  const checkOut = p.check_out ?? checkIn;
+  const { error } = await getClient().from("reservations").insert({
+    property_id: p.property_id,
+    check_in_date: checkIn,
+    check_out_date: checkOut,
+    platform: p.plataforma ?? "directo",
+    amount_charged: p.monto,
+    notes: p.descripcion ?? "",
+    created_by: createdBy,
+    updated_by: createdBy,
+  });
+  if (error) throw new Error(`No se pudo guardar el ingreso: ${error.message}`);
+}
+
+export async function logMessage(
+  telegramId: number,
+  chatId: number | null,
+  contentType: string,
+  rawText: string | null,
+  parsed: Record<string, unknown> | null,
+): Promise<void> {
+  try {
+    await getClient().from("telegram_messages").insert({
+      telegram_id: telegramId,
+      chat_id: chatId,
+      content_type: contentType,
+      raw_text: rawText,
+      parsed,
+    });
+  } catch (_) {
+    // El log es best-effort: no interrumpe el flujo.
+  }
+}

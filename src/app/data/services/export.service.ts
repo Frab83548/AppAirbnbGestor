@@ -6,6 +6,7 @@ import { DashboardKpis } from '../../domain/models/dashboard.model';
 import { Reservation } from '../../domain/models/reservation.model';
 import { VariableExpense } from '../../domain/models/expense.model';
 import { FixedExpense } from '../../domain/models/expense.model';
+import { formatIsoToDdMmYyyy } from '../../shared/utils/date.util';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
@@ -39,7 +40,7 @@ export class ExportService {
       startY: 80,
       head: [['Fecha', 'Propiedad', 'Cobrado', 'Com. Fran', 'Gan. Neta']],
       body: reservations.map((r) => [
-        r.checkInDate,
+        formatIsoToDdMmYyyy(r.checkInDate),
         r.propertyName ?? '',
         this.formatCurrency(r.amountCharged),
         this.formatCurrency(r.franCommission),
@@ -89,7 +90,7 @@ export class ExportService {
       wb,
       XLSX.utils.json_to_sheet(
         reservations.map((r) => ({
-          Fecha: r.checkInDate,
+          Fecha: formatIsoToDdMmYyyy(r.checkInDate),
           Propiedad: r.propertyName,
           Plataforma: r.platform,
           Cobrado: r.amountCharged,
@@ -104,7 +105,7 @@ export class ExportService {
       wb,
       XLSX.utils.json_to_sheet(
         variableExpenses.map((e) => ({
-          Fecha: e.expenseDate,
+          Fecha: formatIsoToDdMmYyyy(e.expenseDate),
           Propiedad: e.propertyName,
           Categoria: e.category,
           Descripcion: e.description,

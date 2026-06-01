@@ -10,6 +10,7 @@ import { IncomeFacade } from '../../income/income.facade';
 import { VariableExpenseFacade } from '../../variable-expenses/variable-expense.facade';
 import { FixedExpenseFacade } from '../../fixed-expenses/fixed-expense.facade';
 import { ExportService } from '../../../data/services/export.service';
+import { formatIsoToDdMmYyyy } from '../../../shared/utils/date.util';
 
 @Component({
   selector: 'app-reports',
@@ -107,7 +108,7 @@ export class Reports {
       const { month, year, reservations } = await this.gatherData();
       this.exportService.exportCsv(
         reservations.map((r) => ({
-          fecha: r.checkInDate,
+          fecha: formatIsoToDdMmYyyy(r.checkInDate),
           propiedad: r.propertyName,
           plataforma: r.platform,
           cobrado: r.amountCharged,

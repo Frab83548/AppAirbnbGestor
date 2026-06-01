@@ -1,7 +1,8 @@
 <mat-sidenav-container class="shell-container">
   <mat-sidenav
     [mode]="isMobile() ? 'over' : 'side'"
-    [opened]="sidenavOpened"
+    [opened]="sidenavOpened()"
+    (closedStart)="sidenavOpened.set(false)"
     class="shell-sidenav"
   >
     <div class="brand">
@@ -14,7 +15,9 @@
           mat-list-item
           [routerLink]="item.route"
           routerLinkActive="active"
-          (click)="isMobile() && (sidenavOpened = false)"
+          #rla="routerLinkActive"
+          [attr.aria-current]="rla.isActive ? 'page' : null"
+          (click)="onNavClick()"
         >
           <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
           <span matListItemTitle>{{ item.label }}</span>
@@ -25,15 +28,25 @@
 
   <mat-sidenav-content>
     <mat-toolbar class="shell-toolbar">
-      <button mat-icon-button (click)="toggleSidenav()">
+      <button
+        mat-icon-button
+        (click)="toggleSidenav()"
+        aria-label="Mostrar u ocultar menú de navegación"
+      >
         <mat-icon>menu</mat-icon>
       </button>
+      <span class="toolbar-title">{{ currentTitle() }}</span>
       <span class="toolbar-spacer"></span>
       <app-period-selector />
-      <button mat-icon-button (click)="toggleTheme()" matTooltip="Cambiar tema">
+      <button
+        mat-icon-button
+        (click)="toggleTheme()"
+        [matTooltip]="theme.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+        [attr.aria-label]="theme.isDark() ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'"
+      >
         <mat-icon>{{ theme.isDark() ? 'light_mode' : 'dark_mode' }}</mat-icon>
       </button>
-      <button mat-icon-button [matMenuTriggerFor]="userMenu">
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" aria-label="Menú de usuario">
         <mat-icon>account_circle</mat-icon>
       </button>
       <mat-menu #userMenu="matMenu">

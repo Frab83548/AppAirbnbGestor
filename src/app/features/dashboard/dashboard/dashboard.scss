@@ -12,6 +12,25 @@
   margin-bottom: 1.5rem;
 }
 
+@media (max-width: 600px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-cards {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-card,
+  .ranking-card {
+    padding: 1rem;
+  }
+}
+
 .info-card {
   display: flex;
   gap: 1rem;

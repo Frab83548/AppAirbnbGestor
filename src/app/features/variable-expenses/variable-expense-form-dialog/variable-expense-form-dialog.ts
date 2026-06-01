@@ -5,13 +5,13 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { VariableExpenseFacade } from '../variable-expense.facade';
 import { PropertyFacade } from '../../properties/property.facade';
 import { VariableExpense } from '../../../domain/models/expense.model';
 import { Property } from '../../../domain/models/property.model';
 import { ExpenseCategory, EXPENSE_CATEGORY_LABELS } from '../../../domain/enums';
+import { DateFieldComponent } from '../../../shared/ui/date-field/date-field';
+import { parseIsoDateLocal, toIsoDateLocal } from '../../../shared/utils/date.util';
 
 @Component({
   selector: 'app-variable-expense-form-dialog',
@@ -23,8 +23,7 @@ import { ExpenseCategory, EXPENSE_CATEGORY_LABELS } from '../../../domain/enums'
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
+    DateFieldComponent,
   ],
   templateUrl: './variable-expense-form-dialog.html',
 })
@@ -41,7 +40,10 @@ export class VariableExpenseFormDialog implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     propertyId: [this.data?.propertyId ?? '', Validators.required],
-    expenseDate: [this.data ? new Date(this.data.expenseDate) : new Date(), Validators.required],
+    expenseDate: [
+      this.data ? parseIsoDateLocal(this.data.expenseDate) : new Date(),
+      Validators.required,
+    ],
     category: [this.data?.category ?? ('otros' as ExpenseCategory), Validators.required],
     description: [this.data?.description ?? ''],
     amount: [this.data?.amount ?? 0, [Validators.required, Validators.min(0)]],
@@ -61,7 +63,7 @@ export class VariableExpenseFormDialog implements OnInit {
     const v = this.form.getRawValue();
     const dto = {
       propertyId: v.propertyId,
-      expenseDate: (v.expenseDate as Date).toISOString().split('T')[0],
+      expenseDate: toIsoDateLocal(v.expenseDate as Date),
       category: v.category,
       description: v.description,
       amount: v.amount,

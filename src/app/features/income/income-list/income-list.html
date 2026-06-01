@@ -19,36 +19,38 @@
   </div>
 
   <div class="table-card">
-    <table mat-table [dataSource]="reservations()">
+    <table mat-table [dataSource]="reservations()" class="responsive-table">
       <ng-container matColumnDef="checkInDate">
         <th mat-header-cell *matHeaderCellDef>Ingreso</th>
-        <td mat-cell *matCellDef="let r">{{ r.checkInDate | date: 'dd/MM/yyyy' }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Ingreso">{{ r.checkInDate | date: 'dd/MM/yyyy' }}</td>
       </ng-container>
       <ng-container matColumnDef="property">
         <th mat-header-cell *matHeaderCellDef>Propiedad</th>
-        <td mat-cell *matCellDef="let r">{{ r.propertyName }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Propiedad">{{ r.propertyName }}</td>
       </ng-container>
       <ng-container matColumnDef="platform">
         <th mat-header-cell *matHeaderCellDef>Plataforma</th>
-        <td mat-cell *matCellDef="let r">{{ platformLabel(r.platform) }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Plataforma">{{ platformLabel(r.platform) }}</td>
       </ng-container>
       <ng-container matColumnDef="amountCharged">
         <th mat-header-cell *matHeaderCellDef>Cobrado</th>
-        <td mat-cell *matCellDef="let r">{{ r.amountCharged | currencyArs }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Cobrado">{{ r.amountCharged | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="franCommission">
         <th mat-header-cell *matHeaderCellDef>Com. Fran</th>
-        <td mat-cell *matCellDef="let r">{{ r.franCommission | currencyArs }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Com. Fran">{{ r.franCommission | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="netProfit">
         <th mat-header-cell *matHeaderCellDef>Gan. Neta</th>
-        <td mat-cell *matCellDef="let r">{{ r.netProfit | currencyArs }}</td>
+        <td mat-cell *matCellDef="let r" data-label="Gan. Neta">{{ r.netProfit | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
+        <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Acciones</span></th>
         <td mat-cell *matCellDef="let r">
-          <button mat-icon-button (click)="openEdit(r)"><mat-icon>edit</mat-icon></button>
-          <button mat-icon-button color="warn" (click)="deleteReservation(r)">
+          <button mat-icon-button aria-label="Editar ingreso" (click)="openEdit(r)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" aria-label="Eliminar ingreso" (click)="deleteReservation(r)">
             <mat-icon>delete</mat-icon>
           </button>
         </td>

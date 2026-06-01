@@ -14,6 +14,7 @@ import { PeriodService } from '../../../core/layout/period.service';
 import { VariableExpense } from '../../../domain/models/expense.model';
 import { EXPENSE_CATEGORY_LABELS } from '../../../domain/enums';
 import { VariableExpenseFormDialog } from '../variable-expense-form-dialog/variable-expense-form-dialog';
+import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-variable-expense-list',
@@ -38,6 +39,7 @@ export class VariableExpenseList {
   private readonly period = inject(PeriodService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(true);
   readonly expenses = signal<VariableExpense[]>([]);
@@ -80,8 +82,19 @@ export class VariableExpenseList {
   }
 
   async deleteExpense(expense: VariableExpense): Promise<void> {
-    if (!confirm('¿Eliminar este gasto?')) return;
-    await this.facade.delete(expense.id);
-    await this.load(this.period.month(), this.period.year());
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar gasto',
+      message: '¿Seguro que querés eliminar este gasto? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!confirmed) return;
+    try {
+      await this.facade.delete(expense.id);
+      this.snackBar.open('Gasto eliminado', 'Cerrar', { duration: 3000 });
+      await this.load(this.period.month(), this.period.year());
+    } catch {
+      this.snackBar.open('Error al eliminar el gasto', 'Cerrar', { duration: 3000 });
+    }
   }
 }

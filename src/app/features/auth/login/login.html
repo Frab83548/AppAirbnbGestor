@@ -9,7 +9,12 @@
     <form [formGroup]="form" (ngSubmit)="submit()">
       <mat-form-field appearance="outline" class="full-width">
         <mat-label>Email</mat-label>
-        <input matInput type="email" formControlName="email" autocomplete="email" />
+        <input matInput type="email" formControlName="email" autocomplete="email" required />
+        @if (form.controls.email.hasError('required')) {
+          <mat-error>El email es obligatorio</mat-error>
+        } @else if (form.controls.email.hasError('email')) {
+          <mat-error>Ingresá un email válido</mat-error>
+        }
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="full-width">
@@ -24,10 +29,17 @@
           mat-icon-button
           matSuffix
           type="button"
+          [attr.aria-label]="hidePassword() ? 'Mostrar contraseña' : 'Ocultar contraseña'"
+          [attr.aria-pressed]="!hidePassword()"
           (click)="hidePassword.set(!hidePassword())"
         >
           <mat-icon>{{ hidePassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
         </button>
+        @if (form.controls.password.hasError('required')) {
+          <mat-error>La contraseña es obligatoria</mat-error>
+        } @else if (form.controls.password.hasError('minlength')) {
+          <mat-error>Mínimo 6 caracteres</mat-error>
+        }
       </mat-form-field>
 
       @if (error()) {

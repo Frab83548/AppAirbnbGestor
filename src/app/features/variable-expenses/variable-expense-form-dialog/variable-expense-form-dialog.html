@@ -3,21 +3,19 @@
   <form [formGroup]="form" class="form-grid">
     <mat-form-field appearance="outline" class="full">
       <mat-label>Propiedad</mat-label>
-      <mat-select formControlName="propertyId">
+      <mat-select formControlName="propertyId" required>
         @for (p of properties(); track p.id) {
           <mat-option [value]="p.id">{{ p.name }}</mat-option>
         }
       </mat-select>
+      @if (form.controls.propertyId.hasError('required')) {
+        <mat-error>Seleccioná una propiedad</mat-error>
+      }
     </mat-form-field>
-    <mat-form-field appearance="outline">
-      <mat-label>Fecha</mat-label>
-      <input matInput [matDatepicker]="picker" formControlName="expenseDate" />
-      <mat-datepicker-toggle matIconSuffix [for]="picker" />
-      <mat-datepicker #picker />
-    </mat-form-field>
+    <app-date-field label="Fecha" formControlName="expenseDate" />
     <mat-form-field appearance="outline">
       <mat-label>Categoría</mat-label>
-      <mat-select formControlName="category">
+      <mat-select formControlName="category" required>
         @for (opt of categoryOptions; track opt[0]) {
           <mat-option [value]="opt[0]">{{ opt[1] }}</mat-option>
         }
@@ -29,7 +27,12 @@
     </mat-form-field>
     <mat-form-field appearance="outline">
       <mat-label>Monto</mat-label>
-      <input matInput type="number" formControlName="amount" />
+      <input matInput type="number" formControlName="amount" required />
+      @if (form.controls.amount.hasError('required')) {
+        <mat-error>Ingresá el monto</mat-error>
+      } @else if (form.controls.amount.hasError('min')) {
+        <mat-error>El monto no puede ser negativo</mat-error>
+      }
     </mat-form-field>
   </form>
 </mat-dialog-content>

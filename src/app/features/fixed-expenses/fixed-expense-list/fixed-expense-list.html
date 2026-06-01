@@ -21,28 +21,32 @@
   </app-empty-state>
 } @else {
   <div class="table-card">
-    <table mat-table [dataSource]="expenses()">
+    <table mat-table [dataSource]="expenses()" class="responsive-table">
       <ng-container matColumnDef="property">
         <th mat-header-cell *matHeaderCellDef>Propiedad</th>
-        <td mat-cell *matCellDef="let e"><strong>{{ e.propertyName }}</strong></td>
+        <td mat-cell *matCellDef="let e" data-label="Propiedad"><strong>{{ e.propertyName }}</strong></td>
       </ng-container>
       <ng-container matColumnDef="total">
         <th mat-header-cell *matHeaderCellDef>Total</th>
-        <td mat-cell *matCellDef="let e">{{ e.total | currencyArs }}</td>
+        <td mat-cell *matCellDef="let e" data-label="Total">{{ e.total | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="building">
         <th mat-header-cell *matHeaderCellDef>Expensas</th>
-        <td mat-cell *matCellDef="let e">{{ e.buildingExpenses | currencyArs }}</td>
+        <td mat-cell *matCellDef="let e" data-label="Expensas">{{ e.buildingExpenses | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="electricity">
         <th mat-header-cell *matHeaderCellDef>Luz</th>
-        <td mat-cell *matCellDef="let e">{{ e.electricity | currencyArs }}</td>
+        <td mat-cell *matCellDef="let e" data-label="Luz">{{ e.electricity | currencyArs }}</td>
       </ng-container>
       <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef></th>
+        <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Acciones</span></th>
         <td mat-cell *matCellDef="let e">
-          <button mat-icon-button (click)="openEdit(e)"><mat-icon>edit</mat-icon></button>
-          <button mat-icon-button color="warn" (click)="deleteExpense(e)"><mat-icon>delete</mat-icon></button>
+          <button mat-icon-button aria-label="Editar gastos fijos" (click)="openEdit(e)">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" aria-label="Eliminar gastos fijos" (click)="deleteExpense(e)">
+            <mat-icon>delete</mat-icon>
+          </button>
         </td>
       </ng-container>
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>

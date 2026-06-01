@@ -5,8 +5,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { IncomeFacade } from '../income.facade';
 import { PropertyFacade } from '../../properties/property.facade';
 import { Reservation } from '../../../domain/models/reservation.model';
@@ -14,6 +12,8 @@ import { Property } from '../../../domain/models/property.model';
 import { Platform, PLATFORM_LABELS } from '../../../domain/enums';
 import { FinancialCalculator } from '../../../domain/services/financial-calculator';
 import { CurrencyArsPipe } from '../../../shared/pipes/currency-ars.pipe';
+import { DateFieldComponent } from '../../../shared/ui/date-field/date-field';
+import { parseIsoDateLocal, toIsoDateLocal } from '../../../shared/utils/date.util';
 
 @Component({
   selector: 'app-income-form-dialog',
@@ -25,8 +25,7 @@ import { CurrencyArsPipe } from '../../../shared/pipes/currency-ars.pipe';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
+    DateFieldComponent,
     CurrencyArsPipe,
   ],
   templateUrl: './income-form-dialog.html',
@@ -50,8 +49,14 @@ export class IncomeFormDialog implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     propertyId: [this.data?.propertyId ?? '', Validators.required],
-    checkInDate: [this.data ? new Date(this.data.checkInDate) : new Date(), Validators.required],
-    checkOutDate: [this.data ? new Date(this.data.checkOutDate) : new Date(), Validators.required],
+    checkInDate: [
+      this.data ? parseIsoDateLocal(this.data.checkInDate) : new Date(),
+      Validators.required,
+    ],
+    checkOutDate: [
+      this.data ? parseIsoDateLocal(this.data.checkOutDate) : new Date(),
+      Validators.required,
+    ],
     platform: [this.data?.platform ?? ('airbnb' as Platform), Validators.required],
     amountCharged: [this.data?.amountCharged ?? 0, [Validators.required, Validators.min(0)]],
     cleaningCost: [this.data?.cleaningCost ?? 0, [Validators.min(0)]],
@@ -61,8 +66,8 @@ export class IncomeFormDialog implements OnInit {
 
   readonly preview = computed(() => {
     const v = this.form.getRawValue();
-    const checkIn = v.checkInDate instanceof Date ? v.checkInDate.toISOString().split('T')[0] : '';
-    const checkOut = v.checkOutDate instanceof Date ? v.checkOutDate.toISOString().split('T')[0] : '';
+    const checkIn = v.checkInDate instanceof Date ? toIsoDateLocal(v.checkInDate) : '';
+    const checkOut = v.checkOutDate instanceof Date ? toIsoDateLocal(v.checkOutDate) : '';
     return FinancialCalculator.previewReservation({
       checkInDate: checkIn,
       checkOutDate: checkOut,
@@ -86,8 +91,8 @@ export class IncomeFormDialog implements OnInit {
     const v = this.form.getRawValue();
     const dto = {
       propertyId: v.propertyId,
-      checkInDate: (v.checkInDate as Date).toISOString().split('T')[0],
-      checkOutDate: (v.checkOutDate as Date).toISOString().split('T')[0],
+      checkInDate: toIsoDateLocal(v.checkInDate as Date),
+      checkOutDate: toIsoDateLocal(v.checkOutDate as Date),
       platform: v.platform,
       amountCharged: v.amountCharged,
       cleaningCost: v.cleaningCost,

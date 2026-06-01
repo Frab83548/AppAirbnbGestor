@@ -3,7 +3,10 @@
   <form [formGroup]="form" class="form-grid">
     <mat-form-field appearance="outline">
       <mat-label>Nombre</mat-label>
-      <input matInput formControlName="name" />
+      <input matInput formControlName="name" required />
+      @if (form.controls.name.hasError('required')) {
+        <mat-error>El nombre es obligatorio</mat-error>
+      }
     </mat-form-field>
 
     <mat-form-field appearance="outline">
@@ -25,12 +28,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Fecha de alta</mat-label>
-      <input matInput [matDatepicker]="picker" formControlName="registeredAt" />
-      <mat-datepicker-toggle matIconSuffix [for]="picker" />
-      <mat-datepicker #picker />
-    </mat-form-field>
+    <app-date-field label="Fecha de alta" formControlName="registeredAt" />
   </form>
 </mat-dialog-content>
 <mat-dialog-actions align="end">

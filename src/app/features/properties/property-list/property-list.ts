@@ -13,6 +13,7 @@ import { PropertyFacade } from '../property.facade';
 import { Property } from '../../../domain/models/property.model';
 import { PROPERTY_STATUS_LABELS } from '../../../domain/enums';
 import { PropertyFormDialog } from '../property-form-dialog/property-form-dialog';
+import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-property-list',
@@ -36,6 +37,7 @@ export class PropertyList implements OnInit {
   private readonly facade = inject(PropertyFacade);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(true);
   readonly properties = signal<Property[]>([]);
@@ -71,7 +73,13 @@ export class PropertyList implements OnInit {
   }
 
   async deleteProperty(property: Property): Promise<void> {
-    if (!confirm(`¿Eliminar "${property.name}"?`)) return;
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar propiedad',
+      message: `¿Seguro que querés eliminar "${property.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await this.facade.delete(property.id);
       this.snackBar.open('Propiedad eliminada', 'Cerrar', { duration: 3000 });

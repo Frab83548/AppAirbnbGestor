@@ -14,6 +14,7 @@ import { PeriodService } from '../../../core/layout/period.service';
 import { Reservation } from '../../../domain/models/reservation.model';
 import { PLATFORM_LABELS } from '../../../domain/enums';
 import { IncomeFormDialog } from '../income-form-dialog/income-form-dialog';
+import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-income-list',
@@ -38,6 +39,7 @@ export class IncomeList {
   private readonly period = inject(PeriodService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(true);
   readonly reservations = signal<Reservation[]>([]);
@@ -95,7 +97,13 @@ export class IncomeList {
   }
 
   async deleteReservation(r: Reservation): Promise<void> {
-    if (!confirm('¿Eliminar este ingreso?')) return;
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar ingreso',
+      message: '¿Seguro que querés eliminar este ingreso? Esta acción no se puede deshacer.',
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!confirmed) return;
     try {
       await this.facade.delete(r.id);
       this.snackBar.open('Ingreso eliminado', 'Cerrar', { duration: 3000 });

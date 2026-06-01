@@ -5,11 +5,11 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatButtonModule } from '@angular/material/button';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
 import { PropertyFacade } from '../property.facade';
 import { Property } from '../../../domain/models/property.model';
 import { PropertyStatus, PROPERTY_STATUS_LABELS } from '../../../domain/enums';
+import { DateFieldComponent } from '../../../shared/ui/date-field/date-field';
+import { parseIsoDateLocal, toIsoDateLocal } from '../../../shared/utils/date.util';
 
 @Component({
   selector: 'app-property-form-dialog',
@@ -21,8 +21,7 @@ import { PropertyStatus, PROPERTY_STATUS_LABELS } from '../../../domain/enums';
     MatInputModule,
     MatSelectModule,
     MatButtonModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
+    DateFieldComponent,
   ],
   templateUrl: './property-form-dialog.html',
 })
@@ -40,7 +39,10 @@ export class PropertyFormDialog {
     address: [this.data?.address ?? ''],
     description: [this.data?.description ?? ''],
     status: [this.data?.status ?? ('activa' as PropertyStatus), Validators.required],
-    registeredAt: [this.data?.registeredAt ? new Date(this.data.registeredAt) : new Date(), Validators.required],
+    registeredAt: [
+      this.data?.registeredAt ? parseIsoDateLocal(this.data.registeredAt) : new Date(),
+      Validators.required,
+    ],
   });
 
   get isEdit(): boolean {
@@ -51,7 +53,7 @@ export class PropertyFormDialog {
     if (this.form.invalid) return;
     this.loading.set(true);
     const v = this.form.getRawValue();
-    const registeredAt = v.registeredAt.toISOString().split('T')[0];
+    const registeredAt = toIsoDateLocal(v.registeredAt);
 
     try {
       if (this.data) {

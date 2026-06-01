@@ -12,6 +12,7 @@ import { FixedExpenseFacade } from '../fixed-expense.facade';
 import { PeriodService } from '../../../core/layout/period.service';
 import { FixedExpense } from '../../../domain/models/expense.model';
 import { FixedExpenseFormDialog } from '../fixed-expense-form-dialog/fixed-expense-form-dialog';
+import { ConfirmService } from '../../../shared/ui/confirm-dialog/confirm.service';
 
 @Component({
   selector: 'app-fixed-expense-list',
@@ -35,6 +36,7 @@ export class FixedExpenseList {
   private readonly period = inject(PeriodService);
   private readonly dialog = inject(MatDialog);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(true);
   readonly duplicating = signal(false);
@@ -73,9 +75,20 @@ export class FixedExpenseList {
   }
 
   async deleteExpense(expense: FixedExpense): Promise<void> {
-    if (!confirm('¿Eliminar gastos fijos de esta propiedad?')) return;
-    await this.facade.delete(expense.id);
-    await this.load(this.period.month(), this.period.year());
+    const confirmed = await this.confirmService.confirm({
+      title: 'Eliminar gastos fijos',
+      message: `¿Seguro que querés eliminar los gastos fijos de "${expense.propertyName}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!confirmed) return;
+    try {
+      await this.facade.delete(expense.id);
+      this.snackBar.open('Gastos fijos eliminados', 'Cerrar', { duration: 3000 });
+      await this.load(this.period.month(), this.period.year());
+    } catch {
+      this.snackBar.open('Error al eliminar los gastos fijos', 'Cerrar', { duration: 3000 });
+    }
   }
 
   async duplicatePrevious(): Promise<void> {

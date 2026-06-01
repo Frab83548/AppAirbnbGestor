@@ -13,8 +13,10 @@ import {
   ApexPlotOptions,
   ApexNonAxisChartSeries,
 } from 'ng-apexcharts';
+import { MatButtonModule } from '@angular/material/button';
 import { PageHeader } from '../../../shared/ui/page-header/page-header';
 import { LoadingState } from '../../../shared/ui/loading-state/loading-state';
+import { EmptyState } from '../../../shared/ui/empty-state/empty-state';
 import { DashboardFacade } from '../../dashboard/dashboard.facade';
 import { PeriodService } from '../../../core/layout/period.service';
 
@@ -50,7 +52,7 @@ export type PieChartOptions = {
 @Component({
   selector: 'app-financial-dashboard',
   standalone: true,
-  imports: [NgApexchartsModule, PageHeader, LoadingState],
+  imports: [NgApexchartsModule, MatButtonModule, PageHeader, LoadingState, EmptyState],
   templateUrl: './financial-dashboard.html',
   styleUrl: './financial-dashboard.scss',
 })
@@ -59,6 +61,7 @@ export class FinancialDashboard {
   readonly period = inject(PeriodService);
 
   readonly loading = signal(true);
+  readonly error = signal(false);
 
   lineChart = signal<Partial<LineChartOptions> | null>(null);
   barChart = signal<Partial<BarChartOptions> | null>(null);
@@ -75,8 +78,13 @@ export class FinancialDashboard {
     });
   }
 
+  retry(): void {
+    void this.load(this.period.month(), this.period.year());
+  }
+
   async load(month: number, year: number): Promise<void> {
     this.loading.set(true);
+    this.error.set(false);
     try {
       const [monthly, properties, breakdown, annual] = await Promise.all([
         this.facade.getMonthlyChart(year),
@@ -136,6 +144,8 @@ export class FinancialDashboard {
         dataLabels: { enabled: false },
         colors: ['#2563eb', '#dc2626', '#16a34a'],
       });
+    } catch {
+      this.error.set(true);
     } finally {
       this.loading.set(false);
     }

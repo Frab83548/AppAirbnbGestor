@@ -5,6 +5,14 @@
 
 @if (loading()) {
   <app-loading-state />
+} @else if (error()) {
+  <app-empty-state
+    icon="error_outline"
+    title="No se pudieron cargar los gráficos"
+    message="Ocurrió un error al obtener el análisis visual."
+  >
+    <button mat-flat-button color="primary" (click)="retry()">Reintentar</button>
+  </app-empty-state>
 } @else {
   <div class="charts-grid">
     <div class="chart-card">

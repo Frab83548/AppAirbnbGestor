@@ -1,21 +1,14 @@
 .summary-row {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--space-5);
   flex-wrap: wrap;
-  margin-bottom: 1rem;
-  padding: 1rem;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
   background: var(--surface-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
 }
 
-.table-card {
-  background: var(--surface-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow: auto;
-}
-
-table { width: 100%; min-width: 700px; }
+// .table-card styling is provided globally in styles/_theme.scss

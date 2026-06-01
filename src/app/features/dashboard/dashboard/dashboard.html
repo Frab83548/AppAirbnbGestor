@@ -5,6 +5,14 @@
 
 @if (loading()) {
   <app-loading-state />
+} @else if (error()) {
+  <app-empty-state
+    icon="error_outline"
+    title="No se pudieron cargar los datos"
+    message="Ocurrió un error al obtener el resumen financiero."
+  >
+    <button mat-flat-button color="primary" (click)="retry()">Reintentar</button>
+  </app-empty-state>
 } @else if (kpis(); as k) {
   <div class="kpi-grid">
     <app-kpi-card title="Ingresos del mes" [value]="k.totalIncome" icon="trending_up" accent="success" />

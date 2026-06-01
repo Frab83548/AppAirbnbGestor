@@ -243,8 +243,7 @@ async function handleMessage(
     console.error("Error procesando mensaje:", err);
     await sendMessage(
       chatId,
-      "Hubo un error procesando tu mensaje. Intenta de nuevo en un momento.\n\n" +
-        `<code>${String((err as Error)?.message ?? err).slice(0, 500)}</code>`,
+      "Hubo un error procesando tu mensaje. Intenta de nuevo en un momento.",
     );
   }
 }

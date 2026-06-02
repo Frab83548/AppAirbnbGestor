@@ -71,6 +71,7 @@ export interface ParsedRecord {
   plataforma: (typeof PLATFORMS)[number] | null;
   check_in: string | null; // ISO yyyy-MM-dd (ingresos)
   check_out: string | null; // ISO yyyy-MM-dd (ingresos)
+  limpieza: number | null; // costo de limpieza del ingreso (default si null)
   descripcion: string;
   // El modelo puede pedir aclaracion si falta info critica.
   necesita_aclaracion: boolean;
@@ -100,6 +101,8 @@ function buildSystemPrompt(propertyNames: string[], today: string): string {
     "- Para gastos: completa 'categoria' (la mas adecuada, 'otros' si no encaja) y 'fecha'.",
     "- Para ingresos: completa 'plataforma' (default 'directo' si no se menciona),",
     "  'monto' (lo cobrado) y, si hay fechas de estadia, 'check_in' y 'check_out'.",
+    "- Para ingresos, si se menciona un costo de limpieza, ponelo en 'limpieza';",
+    "  si no se menciona, deja 'limpieza' en null (se usara el valor por defecto).",
     "- Si falta el monto o la propiedad no se puede determinar, marca",
     "  'necesita_aclaracion' = true y explica brevemente en 'mensaje_aclaracion'.",
     "- 'descripcion' es un resumen corto legible de la operacion.",
@@ -115,6 +118,7 @@ function buildSystemPrompt(propertyNames: string[], today: string): string {
         plataforma: "string|null",
         check_in: "yyyy-MM-dd|null",
         check_out: "yyyy-MM-dd|null",
+        limpieza: "number|null",
         descripcion: "string",
         necesita_aclaracion: "boolean",
         mensaje_aclaracion: "string",
@@ -145,6 +149,7 @@ function parseJsonResponse(content: string): ParsedRecord {
     plataforma: parsed.plataforma ?? null,
     check_in: parsed.check_in ?? null,
     check_out: parsed.check_out ?? null,
+    limpieza: typeof parsed.limpieza === "number" ? parsed.limpieza : null,
     descripcion: parsed.descripcion ?? "",
     necesita_aclaracion: parsed.necesita_aclaracion ?? false,
     mensaje_aclaracion: parsed.mensaje_aclaracion ?? "",

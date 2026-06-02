@@ -59,7 +59,7 @@ export class IncomeFormDialog implements OnInit {
     ],
     platform: [this.data?.platform ?? ('airbnb' as Platform), Validators.required],
     amountCharged: [this.data?.amountCharged ?? 0, [Validators.required, Validators.min(0)]],
-    cleaningCost: [this.data?.cleaningCost ?? 0, [Validators.min(0)]],
+    cleaningCost: [this.data?.cleaningCost ?? 10000, [Validators.min(0)]],
     extraExpenses: [this.data?.extraExpenses ?? 0, [Validators.min(0)]],
     notes: [this.data?.notes ?? ''],
   });

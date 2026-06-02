@@ -117,6 +117,9 @@ export async function insertExpense(
   if (error) throw new Error(`No se pudo guardar el gasto: ${error.message}`);
 }
 
+// Costo de limpieza por defecto cuando el ingreso no especifica uno.
+export const DEFAULT_CLEANING = 10000;
+
 export async function insertReservation(
   draft: Draft,
   createdBy: string | null,
@@ -124,17 +127,41 @@ export async function insertReservation(
   const p = draft.payload;
   const checkIn = p.check_in ?? p.fecha;
   const checkOut = p.check_out ?? checkIn;
-  const { error } = await getClient().from("reservations").insert({
+  const cleaning = typeof p.limpieza === "number" && p.limpieza >= 0
+    ? p.limpieza
+    : DEFAULT_CLEANING;
+  const { data, error } = await getClient().from("reservations").insert({
     property_id: p.property_id,
     check_in_date: checkIn,
     check_out_date: checkOut,
     platform: p.plataforma ?? "directo",
     amount_charged: p.monto,
+    cleaning_cost: cleaning,
     notes: p.descripcion ?? "",
     created_by: createdBy,
     updated_by: createdBy,
-  });
+  }).select("id").single();
   if (error) throw new Error(`No se pudo guardar el ingreso: ${error.message}`);
+
+  // La limpieza tambien se registra como gasto variable vinculado a la reserva.
+  if (cleaning > 0) {
+    const reservationId = (data as { id: string }).id;
+    const { error: expError } = await getClient()
+      .from("variable_expenses")
+      .insert({
+        property_id: p.property_id,
+        expense_date: checkIn,
+        category: "limpieza",
+        description: "Limpieza",
+        amount: cleaning,
+        reservation_id: reservationId,
+        created_by: createdBy,
+        updated_by: createdBy,
+      });
+    if (expError) {
+      throw new Error(`No se pudo guardar la limpieza: ${expError.message}`);
+    }
+  }
 }
 
 export async function logMessage(

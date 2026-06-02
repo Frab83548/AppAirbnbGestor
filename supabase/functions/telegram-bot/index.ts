@@ -15,6 +15,7 @@ import {
   transcribeAudio,
 } from "./openai.ts";
 import {
+  DEFAULT_CLEANING,
   type Draft,
   deleteDraft,
   getAllowedUser,
@@ -71,10 +72,14 @@ function buildSummary(
   }
   const checkIn = record.check_in ?? record.fecha;
   const checkOut = record.check_out ?? checkIn;
+  const cleaning = typeof record.limpieza === "number" && record.limpieza >= 0
+    ? record.limpieza
+    : DEFAULT_CLEANING;
   return [
     "<b>Confirmar ingreso</b>",
     `Propiedad: <b>${propertyName}</b>`,
     `Monto cobrado: <b>${formatMoney(record.monto)}</b>`,
+    `Limpieza (gasto): <b>${formatMoney(cleaning)}</b>`,
     `Plataforma: <b>${record.plataforma ?? "directo"}</b>`,
     `Check-in: <b>${formatDdMmYyyy(checkIn)}</b>`,
     `Check-out: <b>${formatDdMmYyyy(checkOut)}</b>`,

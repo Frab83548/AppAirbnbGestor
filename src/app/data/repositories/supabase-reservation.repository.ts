@@ -94,7 +94,9 @@ export class SupabaseReservationRepository implements IReservationRepository {
       .select('*, properties(name)')
       .single();
     if (error) throw error;
-    return this.toDomain(data as ReservationRow);
+    const row = data as ReservationRow;
+    await this.syncCleaningExpense(row, userId);
+    return this.toDomain(row);
   }
 
   async update(dto: UpdateReservationDto): Promise<Reservation> {
@@ -116,12 +118,58 @@ export class SupabaseReservationRepository implements IReservationRepository {
       .select('*, properties(name)')
       .single();
     if (error) throw error;
-    return this.toDomain(data as ReservationRow);
+    const row = data as ReservationRow;
+    await this.syncCleaningExpense(row, userId);
+    return this.toDomain(row);
   }
 
   async delete(id: string): Promise<void> {
+    // El gasto de limpieza vinculado se borra solo (FK ON DELETE CASCADE).
     const { error } = await this.supabase.from('reservations').delete().eq('id', id);
     if (error) throw error;
+  }
+
+  // Mantiene sincronizado el gasto variable de limpieza asociado a la reserva.
+  // La limpieza se computa como gasto variable (categoria 'limpieza') ademas de
+  // descontarse en la comision; el ajuste de la vista evita el doble conteo.
+  private async syncCleaningExpense(
+    row: ReservationRow,
+    userId: string | null,
+  ): Promise<void> {
+    const cleaning = Number(row.cleaning_cost) || 0;
+
+    const { data: existing } = await this.supabase
+      .from('variable_expenses')
+      .select('id')
+      .eq('reservation_id', row.id)
+      .eq('category', 'limpieza')
+      .maybeSingle();
+    const existingId = (existing as { id: string } | null)?.id ?? null;
+
+    if (cleaning <= 0) {
+      if (existingId) {
+        await this.supabase.from('variable_expenses').delete().eq('id', existingId);
+      }
+      return;
+    }
+
+    const payload = {
+      property_id: row.property_id,
+      expense_date: row.check_in_date,
+      category: 'limpieza',
+      description: 'Limpieza',
+      amount: cleaning,
+      reservation_id: row.id,
+      updated_by: userId,
+    };
+
+    if (existingId) {
+      await this.supabase.from('variable_expenses').update(payload).eq('id', existingId);
+    } else {
+      await this.supabase
+        .from('variable_expenses')
+        .insert({ ...payload, created_by: userId });
+    }
   }
 
   private toDomain(row: ReservationRow): Reservation {

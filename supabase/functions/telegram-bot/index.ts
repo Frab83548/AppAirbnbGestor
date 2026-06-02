@@ -9,27 +9,39 @@ import {
   sendMessage,
 } from "./telegram.ts";
 import {
+  FIXED_CONCEPT_LABELS,
+  type FixedConcept,
   extractFromImage,
   extractFromText,
+  extractFixedAmounts,
+  fixedAmountsTotal,
+  mergeFromClarification,
   type ParsedRecord,
   transcribeAudio,
 } from "./openai.ts";
 import {
   DEFAULT_CLEANING,
   type Draft,
+  type DraftKind,
+  type FixedExpensePayload,
+  buildFixedExpensePayload,
   deleteDraft,
+  getActiveClarificationDraft,
   getAllowedUser,
   getDraft,
   getProperties,
   insertExpense,
+  insertFixedExpense,
   insertReservation,
   logMessage,
   matchProperty,
   type Property,
+  saveClarificationDraft,
   saveDraft,
 } from "./db.ts";
 
-// Fecha de hoy en zona America/Argentina/Buenos_Aires (ISO yyyy-MM-dd).
+const IMAGE_CONFIDENCE_THRESHOLD = 0.6;
+
 function todayInArgentina(): string {
   const fmt = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Argentina/Buenos_Aires",
@@ -38,6 +50,11 @@ function todayInArgentina(): string {
     day: "2-digit",
   });
   return fmt.format(new Date());
+}
+
+function currentMonthYear(today: string): { mes: number; anio: number } {
+  const [anio, mes] = today.split("-").map(Number);
+  return { mes, anio };
 }
 
 function formatMoney(n: number | null): string {
@@ -55,14 +72,40 @@ function formatDdMmYyyy(iso: string | null): string {
   return `${d}/${m}/${y}`;
 }
 
+function formatMonthYear(mes: number, anio: number): string {
+  return `${String(mes).padStart(2, "0")}/${anio}`;
+}
+
+function buildFixedSummary(payload: FixedExpensePayload): string {
+  const lines = [
+    "<b>Confirmar gasto fijo</b>",
+    `Propiedad: <b>${payload.property_name}</b>`,
+    `Periodo: <b>${formatMonthYear(payload.mes, payload.anio)}</b>`,
+  ];
+  for (const concept of Object.keys(payload.conceptos_fijos) as FixedConcept[]) {
+    const amount = payload.conceptos_fijos[concept];
+    if (amount && amount > 0) {
+      lines.push(`${FIXED_CONCEPT_LABELS[concept]}: <b>${formatMoney(amount)}</b>`);
+    }
+  }
+  lines.push(
+    `Total: <b>${formatMoney(fixedAmountsTotal(payload.conceptos_fijos))}</b>`,
+  );
+  return lines.join("\n");
+}
+
 function buildSummary(
-  kind: "ingreso" | "gasto",
+  kind: DraftKind,
   record: ParsedRecord,
   propertyName: string,
+  fixedPayload?: FixedExpensePayload,
 ): string {
+  if (kind === "gasto_fijo" && fixedPayload) {
+    return buildFixedSummary(fixedPayload);
+  }
   if (kind === "gasto") {
     return [
-      "<b>Confirmar gasto</b>",
+      "<b>Confirmar gasto variable</b>",
       `Propiedad: <b>${propertyName}</b>`,
       `Monto: <b>${formatMoney(record.monto)}</b>`,
       `Categoria: <b>${record.categoria ?? "otros"}</b>`,
@@ -92,7 +135,36 @@ const confirmButtons = (draftId: string): InlineButton[][] => [[
   { text: "Cancelar", callback_data: `cancel:${draftId}` },
 ]];
 
-// Procesa un registro ya interpretado: valida, guarda borrador y pide confirmacion.
+function needsImageClarification(
+  record: ParsedRecord,
+  contentType: string,
+): boolean {
+  if (contentType !== "foto") return false;
+  if (record.necesita_aclaracion) return true;
+  if (record.tipo === "desconocido") return true;
+  if (record.confianza !== null && record.confianza < IMAGE_CONFIDENCE_THRESHOLD) {
+    return true;
+  }
+  if (record.tipo === "gasto" && record.monto === null) return true;
+  if (record.tipo === "gasto_fijo") {
+    return Object.keys(extractFixedAmounts(record)).length === 0;
+  }
+  return false;
+}
+
+async function askForClarification(
+  chatId: number,
+  telegramId: number,
+  record: ParsedRecord,
+  contentType: string,
+): Promise<void> {
+  await saveClarificationDraft(telegramId, chatId, record, contentType);
+  const msg = record.mensaje_aclaracion ||
+    "No pude interpretar bien la foto. Contame: que propiedad es, que tipo de gasto " +
+      "(luz, gas, expensas, etc.) y el monto.";
+  await sendMessage(chatId, msg);
+}
+
 async function handleParsedRecord(
   chatId: number,
   telegramId: number,
@@ -103,18 +175,26 @@ async function handleParsedRecord(
 ): Promise<void> {
   await logMessage(telegramId, chatId, contentType, rawText, { ...record });
 
+  if (needsImageClarification(record, contentType)) {
+    await askForClarification(chatId, telegramId, record, contentType);
+    return;
+  }
+
   if (record.tipo === "desconocido") {
     await sendMessage(
       chatId,
-      "No pude entender si es un ingreso o un gasto. Proba ser mas especifico, " +
-        "por ejemplo: <i>Gasto de limpieza 8000 en Trejo</i>.",
+      "No pude entender si es un ingreso, gasto variable o gasto fijo. Proba ser mas especifico.\n\n" +
+        "Ejemplos:\n" +
+        "- <i>Gasto de limpieza 8000 en Trejo hoy</i>\n" +
+        "- <i>Gasto fijo luz 15000 en Independencia mayo</i>\n" +
+        "- <i>Ingreso 95000 en Trejo por Airbnb</i>",
     );
     return;
   }
 
-  if (record.necesita_aclaracion || record.monto === null) {
+  if (record.necesita_aclaracion) {
     const msg = record.mensaje_aclaracion ||
-      "Me falta el monto. Indicame el importe, por favor.";
+      "Me falta informacion. Indicame los datos que faltan, por favor.";
     await sendMessage(chatId, msg);
     return;
   }
@@ -131,20 +211,61 @@ async function handleParsedRecord(
     return;
   }
 
-  const kind = record.tipo === "ingreso" ? "ingreso" : "gasto";
-  if (kind === "gasto" && !record.fecha) {
-    record.fecha = todayInArgentina();
+  const today = todayInArgentina();
+
+  if (record.tipo === "gasto_fijo") {
+    const fixedPayload = buildFixedExpensePayload(record, property, today);
+    if (!fixedPayload) {
+      await sendMessage(
+        chatId,
+        "No pude identificar los conceptos del gasto fijo (luz, gas, expensas, etc.) " +
+          "ni sus montos. Indicalos, por favor.",
+      );
+      return;
+    }
+    const draftId = await saveDraft(telegramId, chatId, "gasto_fijo", fixedPayload);
+    await sendMessage(
+      chatId,
+      buildSummary("gasto_fijo", record, property.name, fixedPayload),
+      confirmButtons(draftId),
+    );
+    return;
   }
 
+  if (record.tipo === "gasto") {
+    if (record.monto === null) {
+      await sendMessage(chatId, "Me falta el monto del gasto. Indicame el importe, por favor.");
+      return;
+    }
+    if (!record.fecha) record.fecha = today;
+    const payload = {
+      ...record,
+      property_id: property.id,
+      property_name: property.name,
+    };
+    const draftId = await saveDraft(telegramId, chatId, "gasto", payload);
+    await sendMessage(
+      chatId,
+      buildSummary("gasto", record, property.name),
+      confirmButtons(draftId),
+    );
+    return;
+  }
+
+  // ingreso
+  if (record.monto === null) {
+    await sendMessage(chatId, "Me falta el monto del ingreso. Indicame el importe, por favor.");
+    return;
+  }
   const payload = {
     ...record,
     property_id: property.id,
     property_name: property.name,
   };
-  const draftId = await saveDraft(telegramId, chatId, kind, payload);
+  const draftId = await saveDraft(telegramId, chatId, "ingreso", payload);
   await sendMessage(
     chatId,
-    buildSummary(kind, record, property.name),
+    buildSummary("ingreso", record, property.name),
     confirmButtons(draftId),
   );
 }
@@ -157,16 +278,21 @@ async function handleMessage(
   const telegramId = (message.from?.id as number) ?? chatId;
   const today = todayInArgentina();
 
-  // Comandos basicos.
   const text: string | undefined = message.text;
   if (text && text.startsWith("/")) {
     if (text.startsWith("/start") || text.startsWith("/help")) {
+      const { mes, anio } = currentMonthYear(today);
       await sendMessage(
         chatId,
-        "Hola! Mandame un <b>texto</b>, <b>audio</b> o <b>foto</b> de un ingreso o gasto " +
-          "y lo registro.\n\nEjemplos:\n" +
-          "- <i>Gasto de limpieza 8000 en Trejo hoy</i>\n" +
+        "Hola! Mandame un <b>texto</b>, <b>audio</b> o <b>foto</b> y lo registro.\n\n" +
+          "<b>Ingresos</b> (reservas):\n" +
           "- <i>Ingreso 95000 en Independencia por Airbnb, check-in 5/6 check-out 8/6</i>\n\n" +
+          "<b>Gastos variables</b> (puntuales):\n" +
+          "- <i>Gasto de limpieza 8000 en Trejo hoy</i>\n\n" +
+          "<b>Gastos fijos</b> (mensuales: luz, gas, expensas...):\n" +
+          `- <i>Gasto fijo luz 15000 gas 8000 en Trejo ${mes}/${anio}</i>\n` +
+          "- Tambien podes mandar una <b>foto de la factura</b>.\n" +
+          "  Si no la interpreto bien, te pregunto para completar.\n\n" +
           "Antes de guardar te pido confirmacion.",
       );
       return;
@@ -174,7 +300,29 @@ async function handleMessage(
   }
 
   try {
-    let record: ParsedRecord | null = null;
+    // Si hay una aclaracion pendiente (ej. foto mal leida), el texto la completa.
+    if (text && !text.startsWith("/")) {
+      const pending = await getActiveClarificationDraft(telegramId);
+      if (pending) {
+        const partial = pending.payload.partial as ParsedRecord;
+        const merged = await mergeFromClarification(
+          partial,
+          text,
+          properties.map((p) => p.name),
+          today,
+        );
+        await deleteDraft(pending.id);
+        await handleParsedRecord(
+          chatId,
+          telegramId,
+          merged,
+          properties,
+          "texto_aclaracion",
+          text,
+        );
+        return;
+      }
+    }
 
     if (message.voice || message.audio) {
       const fileId = (message.voice ?? message.audio).file_id as string;
@@ -185,7 +333,7 @@ async function handleMessage(
         await sendMessage(chatId, "No pude entender el audio. Proba de nuevo.");
         return;
       }
-      record = await extractFromText(
+      const record = await extractFromText(
         message.caption ? `${message.caption}. ${transcript}` : transcript,
         properties.map((p) => p.name),
         today,
@@ -202,10 +350,9 @@ async function handleMessage(
     }
 
     if (message.photo && Array.isArray(message.photo)) {
-      // El array viene ordenado de menor a mayor resolucion.
       const largest = message.photo[message.photo.length - 1];
       const { bytes } = await downloadFile(largest.file_id as string);
-      record = await extractFromImage(
+      const record = await extractFromImage(
         bytes,
         "image/jpeg",
         message.caption ?? "",
@@ -224,7 +371,7 @@ async function handleMessage(
     }
 
     if (text) {
-      record = await extractFromText(
+      const record = await extractFromText(
         text,
         properties.map((p) => p.name),
         today,
@@ -286,17 +433,18 @@ async function handleCallback(
       const createdBy = allowed?.profile_id ?? null;
       if (draft.kind === "gasto") {
         await insertExpense(draft, createdBy);
+      } else if (draft.kind === "gasto_fijo") {
+        await insertFixedExpense(draft, createdBy);
       } else {
         await insertReservation(draft, createdBy);
       }
       await deleteDraft(draftId);
-      await editMessageText(
-        chatId,
-        messageId,
-        draft.kind === "gasto"
-          ? "Gasto guardado correctamente."
-          : "Ingreso guardado correctamente.",
-      );
+      const savedMsg = draft.kind === "gasto"
+        ? "Gasto variable guardado correctamente."
+        : draft.kind === "gasto_fijo"
+        ? "Gasto fijo guardado correctamente."
+        : "Ingreso guardado correctamente.";
+      await editMessageText(chatId, messageId, savedMsg);
     } catch (err) {
       console.error("Error guardando:", err);
       await editMessageText(
@@ -313,7 +461,6 @@ Deno.serve(async (req: Request) => {
     return new Response("OK", { status: 200 });
   }
 
-  // Validacion del secret del webhook.
   const expectedSecret = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
   const gotSecret = req.headers.get("x-telegram-bot-api-secret-token");
   if (expectedSecret && gotSecret !== expectedSecret) {
@@ -332,7 +479,6 @@ Deno.serve(async (req: Request) => {
     const callback = update.callback_query;
     const fromId = (callback?.from?.id ?? message?.from?.id) as number | undefined;
 
-    // Whitelist de usuarios autorizados.
     if (fromId !== undefined) {
       const allowed = await getAllowedUser(fromId);
       if (!allowed) {
@@ -356,7 +502,6 @@ Deno.serve(async (req: Request) => {
       await handleMessage(message, properties);
     }
   } catch (err) {
-    // Siempre responder 200 para que Telegram no reintente en loop.
     console.error("Error en webhook:", err);
   }
 

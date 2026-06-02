@@ -136,9 +136,10 @@ Un bot de Telegram recibe **texto, audios o fotos** de ingresos/gastos, los inte
 
 1. El usuario manda un mensaje (texto / audio / foto) al bot.
 2. La función valida el secret del webhook y que el `telegram_id` esté en la whitelist.
-3. OpenAI extrae: tipo (ingreso/gasto), propiedad, monto, fecha, categoría/plataforma.
+3. OpenAI extrae: tipo (ingreso / gasto variable / gasto fijo), propiedad, montos, fechas y conceptos (luz, gas, expensas, etc.).
 4. El bot responde un resumen con botones **Confirmar / Cancelar**.
-5. Al confirmar, inserta en `reservations` (ingreso) o `variable_expenses` (gasto).
+5. Al confirmar, inserta en `reservations` (ingreso), `variable_expenses` (gasto variable) o `fixed_expenses` (gasto fijo mensual).
+6. Si una **foto** no se interpreta bien, el bot pregunta y espera tu respuesta en texto para completar los datos.
 
 ### Setup
 
@@ -172,7 +173,10 @@ curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<PROJECT_REF>.f
 Escribirle al bot, por ejemplo:
 
 - `Gasto de limpieza 8000 en Trejo hoy`
+- `Gasto fijo luz 15000 gas 8000 en Independencia mayo`
 - `Ingreso 95000 en Independencia por Airbnb, check-in 5/6 check-out 8/6`
-- Un audio diciendo lo mismo, o una foto de un comprobante.
+- Un audio diciendo lo mismo, o una **foto de factura** (luz, gas, expensas, etc.)
+
+Si la foto es ilegible o falta algun dato, el bot te pregunta y podes responder en texto.
 
 El bot responde un resumen y guarda solo al tocar **Confirmar**.

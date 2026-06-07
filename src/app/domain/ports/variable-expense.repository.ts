@@ -9,6 +9,8 @@ export interface ExpenseFilters {
   propertyId?: string;
   month?: number;
   year?: number;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface IVariableExpenseRepository {

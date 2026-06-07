@@ -1,14 +1,78 @@
-<app-page-header
-  title="Reportes"
-  [subtitle]="'Exportaciones — ' + period.getMonthLabel()"
-/>
+<app-page-header title="Reportes" [subtitle]="'Exportaciones — ' + periodLabel()" />
+
+<mat-card class="period-card">
+  <div class="period-card__header">
+    <div>
+      <h2>Periodo del reporte</h2>
+      <p>{{ periodHint() }}</p>
+    </div>
+    <mat-button-toggle-group
+      [value]="periodMode()"
+      (change)="onModeChange($event.value)"
+      aria-label="Tipo de periodo"
+    >
+      <mat-button-toggle value="monthly">Mensual</mat-button-toggle>
+      <mat-button-toggle value="weekly">Semanal</mat-button-toggle>
+      <mat-button-toggle value="custom">Rango</mat-button-toggle>
+    </mat-button-toggle-group>
+  </div>
+
+  @if (periodMode() === 'monthly') {
+    <div class="period-controls">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="period-field">
+        <mat-label>Mes</mat-label>
+        <mat-select
+          [value]="period.month()"
+          (selectionChange)="onMonthChange($event.value)"
+          aria-label="Seleccionar mes"
+        >
+          @for (m of period.getMonths(); track m.value) {
+            <mat-option [value]="m.value">{{ m.label | titlecase }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="period-field">
+        <mat-label>Año</mat-label>
+        <mat-select
+          [value]="period.year()"
+          (selectionChange)="onYearChange($event.value)"
+          aria-label="Seleccionar año"
+        >
+          @for (y of period.getYears(); track y) {
+            <mat-option [value]="y">{{ y }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  }
+
+  @if (periodMode() === 'weekly') {
+    <div class="period-controls period-controls--week">
+      <button mat-icon-button type="button" aria-label="Semana anterior" (click)="shiftWeek(-1)">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span class="week-label">{{ periodLabel() }}</span>
+      <button mat-icon-button type="button" aria-label="Semana siguiente" (click)="shiftWeek(1)">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+      <button mat-stroked-button type="button" (click)="goToCurrentWeek()">Esta semana</button>
+    </div>
+  }
+
+  @if (periodMode() === 'custom') {
+    <form [formGroup]="customRangeForm" class="period-controls period-controls--custom">
+      <app-date-field label="Desde" formControlName="dateFrom" fieldClass="range-field" />
+      <app-date-field label="Hasta" formControlName="dateTo" fieldClass="range-field" />
+    </form>
+  }
+</mat-card>
 
 <div class="reports-grid">
   <mat-card class="report-card">
     <mat-icon>picture_as_pdf</mat-icon>
-    <h3>Reporte mensual PDF</h3>
-    <p>KPIs, ingresos y gastos del mes seleccionado.</p>
-    <button mat-flat-button color="primary" [disabled]="loading()" (click)="exportPdfMonthly()">
+    <h3>Reporte PDF</h3>
+    <p>KPIs, ingresos y gastos del periodo seleccionado.</p>
+    <button mat-flat-button color="primary" [disabled]="loading()" (click)="exportPdf()">
       Descargar PDF
     </button>
   </mat-card>
@@ -16,9 +80,9 @@
   <mat-card class="report-card">
     <mat-icon>picture_as_pdf</mat-icon>
     <h3>Reporte anual PDF</h3>
-    <p>Consolidado del año {{ period.year() }}.</p>
-    <button mat-flat-button color="primary" [disabled]="loading()" (click)="exportPdfAnnual()">
-      Descargar PDF
+    <p>Atajo: consolidado completo del año {{ period.year() }}.</p>
+    <button mat-stroked-button [disabled]="loading()" (click)="exportAnnualPdf()">
+      Descargar año {{ period.year() }}
     </button>
   </mat-card>
 
@@ -34,7 +98,7 @@
   <mat-card class="report-card">
     <mat-icon>download</mat-icon>
     <h3>Exportación CSV</h3>
-    <p>Ingresos del mes en formato CSV.</p>
+    <p>Ingresos del periodo en formato CSV.</p>
     <button mat-stroked-button [disabled]="loading()" (click)="exportCsv()">
       Descargar CSV
     </button>

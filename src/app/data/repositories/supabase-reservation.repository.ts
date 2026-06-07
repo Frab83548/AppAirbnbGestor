@@ -46,7 +46,9 @@ export class SupabaseReservationRepository implements IReservationRepository {
       .order('check_in_date', { ascending: false });
 
     if (filters?.propertyId) query = query.eq('property_id', filters.propertyId);
-    if (filters?.year) {
+    if (filters?.dateFrom) query = query.gte('check_in_date', filters.dateFrom);
+    if (filters?.dateTo) query = query.lte('check_in_date', filters.dateTo);
+    if (filters?.year && !filters.dateFrom && !filters.dateTo) {
       if (filters.month) {
         const start = `${filters.year}-${String(filters.month).padStart(2, '0')}-01`;
         const endMonth = filters.month === 12 ? 1 : filters.month + 1;

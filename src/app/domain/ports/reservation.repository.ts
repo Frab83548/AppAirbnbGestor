@@ -9,6 +9,8 @@ export interface ReservationFilters {
   propertyId?: string;
   month?: number;
   year?: number;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface IReservationRepository {

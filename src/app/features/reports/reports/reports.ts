@@ -19,18 +19,15 @@ import { VariableExpenseFacade } from '../../variable-expenses/variable-expense.
 import { FixedExpenseFacade } from '../../fixed-expenses/fixed-expense.facade';
 import { ExportService } from '../../../data/services/export.service';
 import { ReportKpiCalculator } from '../../../domain/services/report-kpi.calculator';
-import { FixedExpense } from '../../../domain/models/expense.model';
 import { formatIsoToDdMmYyyy, toIsoDateLocal } from '../../../shared/utils/date.util';
 import {
   buildExportFilename,
   formatRangeLabel,
   getMonthRange,
   getWeekRange,
-  monthOverlapsRange,
   ReportDateRange,
   ReportPeriodMode,
   shiftWeek,
-  yearsInRange,
 } from '../report-period.util';
 
 @Component({
@@ -108,9 +105,9 @@ export class Reports {
       return 'Usa el selector de mes/año del encabezado o cambialo acá.';
     }
     if (mode === 'weekly') {
-      return 'Semana de lunes a domingo. Los gastos fijos se prorratean por dias.';
+      return 'Semana de lunes a domingo. Se suman los gastos fijos cargados dentro del rango.';
     }
-    return 'Elegí fecha desde y hasta. Los gastos fijos se prorratean por dias.';
+    return 'Elegí fecha desde y hasta. Se suman los gastos fijos cargados dentro del rango.';
   });
 
   onModeChange(mode: ReportPeriodMode): void {
@@ -146,40 +143,33 @@ export class Reports {
     return true;
   }
 
-  private async fetchFixedForRange(range: ReportDateRange): Promise<FixedExpense[]> {
-    const years = yearsInRange(range.dateFrom, range.dateTo);
-    const byYear = await Promise.all(years.map((year) => this.fixedFacade.findAll({ year })));
-    return byYear
-      .flat()
-      .filter((expense) =>
-        monthOverlapsRange(expense.month, expense.year, range.dateFrom, range.dateTo),
-      );
-  }
-
   private async gatherData() {
     const range = this.activeRange();
     if (!this.validateRange(range)) {
       throw new Error('Rango invalido');
     }
 
+    const mode = this.periodMode();
     const dateFilters = { dateFrom: range.dateFrom, dateTo: range.dateTo };
+
+    // Mensual: gastos fijos del mes (periodo); semanal/rango: por fecha de carga.
+    const fixedQuery = mode === 'monthly'
+      ? this.fixedFacade.findAll({ month: this.period.month(), year: this.period.year() })
+      : this.fixedFacade.findAll({ createdFrom: range.dateFrom, createdTo: range.dateTo });
+
     const [reservations, variableExpenses, fixedExpenses] = await Promise.all([
       this.incomeFacade.findAll(dateFilters),
       this.variableFacade.findAll(dateFilters),
-      this.fetchFixedForRange(range),
+      fixedQuery,
     ]);
 
-    const fixedTotal = ReportKpiCalculator.prorateFixedExpenses(
-      fixedExpenses,
-      range.dateFrom,
-      range.dateTo,
-    );
-    const kpis =
-      this.periodMode() === 'monthly' &&
-      getMonthRange(this.period.month(), this.period.year()).dateFrom === range.dateFrom &&
-      getMonthRange(this.period.month(), this.period.year()).dateTo === range.dateTo
-        ? await this.dashboardFacade.getKpis(this.period.month(), this.period.year())
-        : ReportKpiCalculator.fromData(reservations, variableExpenses, fixedTotal);
+    let kpis;
+    if (mode === 'monthly') {
+      kpis = await this.dashboardFacade.getKpis(this.period.month(), this.period.year());
+    } else {
+      const fixedTotal = fixedExpenses.reduce((sum, e) => sum + e.total, 0);
+      kpis = ReportKpiCalculator.fromData(reservations, variableExpenses, fixedTotal);
+    }
 
     return {
       range,

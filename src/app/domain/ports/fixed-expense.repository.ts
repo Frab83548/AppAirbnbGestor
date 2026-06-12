@@ -9,6 +9,8 @@ export interface FixedExpenseFilters {
   propertyId?: string;
   month?: number;
   year?: number;
+  createdFrom?: string;
+  createdTo?: string;
 }
 
 export interface IFixedExpenseRepository {

@@ -51,8 +51,13 @@ export class ExportService {
     const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? 120;
     autoTable(doc, {
       startY: finalY + 10,
-      head: [['Gastos variables', 'Categoría', 'Monto']],
-      body: variableExpenses.map((e) => [e.description, e.category, this.formatCurrency(e.amount)]),
+      head: [['Fecha', 'Detalle', 'Categoría', 'Monto']],
+      body: variableExpenses.map((e) => [
+        formatIsoToDdMmYyyy(e.expenseDate),
+        e.description,
+        e.category,
+        this.formatCurrency(e.amount),
+      ]),
     });
 
     autoTable(doc, {

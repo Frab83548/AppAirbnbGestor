@@ -47,6 +47,10 @@ export class SupabaseFixedExpenseRepository implements IFixedExpenseRepository {
     if (filters?.propertyId) query = query.eq('property_id', filters.propertyId);
     if (filters?.month) query = query.eq('month', filters.month);
     if (filters?.year) query = query.eq('year', filters.year);
+    if (filters?.createdFrom) query = query.gte('created_at', filters.createdFrom);
+    if (filters?.createdTo) {
+      query = query.lte('created_at', `${filters.createdTo}T23:59:59.999`);
+    }
 
     const { data, error } = await query;
     if (error) throw error;

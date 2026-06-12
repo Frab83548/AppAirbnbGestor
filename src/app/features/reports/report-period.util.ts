@@ -53,24 +53,6 @@ export function formatRangeLabel(dateFrom: string, dateTo: string): string {
   return `${fromLabel} – ${toLabel}`;
 }
 
-export function monthOverlapsRange(
-  month: number,
-  year: number,
-  dateFrom: string,
-  dateTo: string,
-): boolean {
-  const range = getMonthRange(month, year);
-  return range.dateFrom <= dateTo && range.dateTo >= dateFrom;
-}
-
-export function yearsInRange(dateFrom: string, dateTo: string): number[] {
-  const fromYear = parseIsoDateLocal(dateFrom).getFullYear();
-  const toYear = parseIsoDateLocal(dateTo).getFullYear();
-  const years: number[] = [];
-  for (let y = fromYear; y <= toYear; y++) years.push(y);
-  return years;
-}
-
 export function buildExportFilename(prefix: string, dateFrom: string, dateTo: string): string {
   return `${prefix}_${dateFrom}_${dateTo}`.replace(/-/g, '');
 }

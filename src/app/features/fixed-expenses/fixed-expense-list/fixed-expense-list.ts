@@ -41,7 +41,18 @@ export class FixedExpenseList {
   readonly loading = signal(true);
   readonly duplicating = signal(false);
   readonly expenses = signal<FixedExpense[]>([]);
-  readonly displayedColumns = ['property', 'total', 'building', 'electricity', 'actions'];
+  readonly displayedColumns = [
+    'property',
+    'building',
+    'electricity',
+    'water',
+    'gas',
+    'internet',
+    'municipality',
+    'others',
+    'total',
+    'actions',
+  ];
 
   constructor() {
     effect(() => {

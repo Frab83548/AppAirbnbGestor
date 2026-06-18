@@ -38,6 +38,26 @@
         <th mat-header-cell *matHeaderCellDef>Luz</th>
         <td mat-cell *matCellDef="let e" data-label="Luz">{{ e.electricity | currencyArs }}</td>
       </ng-container>
+      <ng-container matColumnDef="water">
+        <th mat-header-cell *matHeaderCellDef>Agua</th>
+        <td mat-cell *matCellDef="let e" data-label="Agua">{{ e.water | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="gas">
+        <th mat-header-cell *matHeaderCellDef>Gas</th>
+        <td mat-cell *matCellDef="let e" data-label="Gas">{{ e.gas | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="internet">
+        <th mat-header-cell *matHeaderCellDef>Internet</th>
+        <td mat-cell *matCellDef="let e" data-label="Internet">{{ e.internet | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="municipality">
+        <th mat-header-cell *matHeaderCellDef>Municipalidad</th>
+        <td mat-cell *matCellDef="let e" data-label="Municipalidad">{{ e.municipality | currencyArs }}</td>
+      </ng-container>
+      <ng-container matColumnDef="others">
+        <th mat-header-cell *matHeaderCellDef>Otros</th>
+        <td mat-cell *matCellDef="let e" data-label="Otros">{{ e.others | currencyArs }}</td>
+      </ng-container>
       <ng-container matColumnDef="actions">
         <th mat-header-cell *matHeaderCellDef><span class="visually-hidden">Acciones</span></th>
         <td mat-cell *matCellDef="let e">

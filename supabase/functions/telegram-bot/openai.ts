@@ -44,7 +44,7 @@ function headers(cfg: LlmConfig): Record<string, string> {
   };
   if (cfg.isOpenRouter) {
     h["HTTP-Referer"] = "https://app-finanzas.vercel.app";
-    h["X-Title"] = "App Finanzas Bot";
+    h["X-Title"] = "gestorAirbnb Bot";
   }
   return h;
 }

@@ -1,4 +1,4 @@
-# App Finanzas
+# gestorAirbnb
 
 Mini ERP financiero para administrar la rentabilidad de propiedades de alquileres temporarios (Airbnb, Booking, directo).
 

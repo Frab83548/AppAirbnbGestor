@@ -86,7 +86,7 @@ export class Shell {
 
   readonly currentTitle = computed(() => {
     const url = this.currentUrl();
-    return this.navItems.find((item) => url.startsWith(item.route))?.label ?? 'App Finanzas';
+    return this.navItems.find((item) => url.startsWith(item.route))?.label ?? 'gestorAirbnb';
   });
 
   toggleTheme(): void {

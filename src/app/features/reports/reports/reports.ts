@@ -1,5 +1,5 @@
 import { TitleCasePipe } from '@angular/common';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { map, startWith } from 'rxjs/operators';
@@ -17,8 +17,10 @@ import { DashboardFacade } from '../../dashboard/dashboard.facade';
 import { IncomeFacade } from '../../income/income.facade';
 import { VariableExpenseFacade } from '../../variable-expenses/variable-expense.facade';
 import { FixedExpenseFacade } from '../../fixed-expenses/fixed-expense.facade';
+import { PropertyFacade } from '../../properties/property.facade';
 import { ExportService } from '../../../data/services/export.service';
 import { ReportKpiCalculator } from '../../../domain/services/report-kpi.calculator';
+import { Property } from '../../../domain/models/property.model';
 import { formatIsoToDdMmYyyy, toIsoDateLocal } from '../../../shared/utils/date.util';
 import {
   buildExportFilename,
@@ -49,12 +51,13 @@ import {
   templateUrl: './reports.html',
   styleUrl: './reports.scss',
 })
-export class Reports {
+export class Reports implements OnInit {
   readonly period = inject(PeriodService);
   private readonly dashboardFacade = inject(DashboardFacade);
   private readonly incomeFacade = inject(IncomeFacade);
   private readonly variableFacade = inject(VariableExpenseFacade);
   private readonly fixedFacade = inject(FixedExpenseFacade);
+  private readonly propertyFacade = inject(PropertyFacade);
   private readonly exportService = inject(ExportService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
@@ -62,6 +65,8 @@ export class Reports {
   readonly loading = signal(false);
   readonly periodMode = signal<ReportPeriodMode>('monthly');
   readonly weekAnchor = signal(new Date());
+  readonly properties = signal<Property[]>([]);
+  readonly selectedPropertyId = signal<string | null>(null);
 
   readonly customRangeForm = this.fb.nonNullable.group({
     dateFrom: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), Validators.required],
@@ -91,12 +96,24 @@ export class Reports {
     };
   });
 
+  readonly selectedPropertyName = computed(() => {
+    const id = this.selectedPropertyId();
+    if (!id) return null;
+    return this.properties().find((p) => p.id === id)?.name ?? null;
+  });
+
   readonly periodLabel = computed(() => {
     const mode = this.periodMode();
     if (mode === 'monthly') return this.period.getMonthLabel();
     const { dateFrom, dateTo } = this.activeRange();
     if (mode === 'weekly') return `Semana ${formatRangeLabel(dateFrom, dateTo)}`;
     return formatRangeLabel(dateFrom, dateTo);
+  });
+
+  readonly exportSubtitle = computed(() => {
+    const property = this.selectedPropertyName();
+    const base = this.periodLabel();
+    return property ? `${base} — ${property}` : base;
   });
 
   readonly periodHint = computed(() => {
@@ -109,6 +126,10 @@ export class Reports {
     }
     return 'Elegí fecha desde y hasta. Se suman los gastos fijos cargados dentro del rango.';
   });
+
+  ngOnInit(): void {
+    void this.propertyFacade.findAll().then((properties) => this.properties.set(properties));
+  }
 
   onModeChange(mode: ReportPeriodMode): void {
     this.periodMode.set(mode);
@@ -123,6 +144,10 @@ export class Reports {
 
   onYearChange(year: number): void {
     this.period.setPeriod(this.period.month(), year);
+  }
+
+  onPropertyChange(propertyId: string | null): void {
+    this.selectedPropertyId.set(propertyId);
   }
 
   shiftWeek(delta: number): void {
@@ -143,6 +168,11 @@ export class Reports {
     return true;
   }
 
+  private propertyFilter(): { propertyId?: string } {
+    const propertyId = this.selectedPropertyId();
+    return propertyId ? { propertyId } : {};
+  }
+
   private async gatherData() {
     const range = this.activeRange();
     if (!this.validateRange(range)) {
@@ -150,12 +180,20 @@ export class Reports {
     }
 
     const mode = this.periodMode();
-    const dateFilters = { dateFrom: range.dateFrom, dateTo: range.dateTo };
+    const propertyFilter = this.propertyFilter();
+    const dateFilters = { dateFrom: range.dateFrom, dateTo: range.dateTo, ...propertyFilter };
 
-    // Mensual: gastos fijos del mes (periodo); semanal/rango: por fecha de carga.
     const fixedQuery = mode === 'monthly'
-      ? this.fixedFacade.findAll({ month: this.period.month(), year: this.period.year() })
-      : this.fixedFacade.findAll({ createdFrom: range.dateFrom, createdTo: range.dateTo });
+      ? this.fixedFacade.findAll({
+        month: this.period.month(),
+        year: this.period.year(),
+        ...propertyFilter,
+      })
+      : this.fixedFacade.findAll({
+        createdFrom: range.dateFrom,
+        createdTo: range.dateTo,
+        ...propertyFilter,
+      });
 
     const [reservations, variableExpenses, fixedExpenses] = await Promise.all([
       this.incomeFacade.findAll(dateFilters),
@@ -164,7 +202,7 @@ export class Reports {
     ]);
 
     let kpis;
-    if (mode === 'monthly') {
+    if (mode === 'monthly' && !propertyFilter.propertyId) {
       kpis = await this.dashboardFacade.getKpis(this.period.month(), this.period.year());
     } else {
       const fixedTotal = fixedExpenses.reduce((sum, e) => sum + e.total, 0);
@@ -173,7 +211,8 @@ export class Reports {
 
     return {
       range,
-      label: this.periodLabel(),
+      label: this.exportSubtitle(),
+      propertyName: this.selectedPropertyName(),
       kpis,
       reservations,
       variableExpenses,
@@ -183,16 +222,18 @@ export class Reports {
 
   private reportTitle(): string {
     const mode = this.periodMode();
-    if (mode === 'monthly') return `Reporte Mensual ${this.periodLabel()}`;
-    if (mode === 'weekly') return `Reporte Semanal ${this.periodLabel()}`;
-    return `Reporte ${this.periodLabel()}`;
+    const propertySuffix = this.selectedPropertyName()
+      ? ` — ${this.selectedPropertyName()}`
+      : '';
+    if (mode === 'monthly') return `Reporte Mensual ${this.periodLabel()}${propertySuffix}`;
+    if (mode === 'weekly') return `Reporte Semanal ${this.periodLabel()}${propertySuffix}`;
+    return `Reporte ${this.periodLabel()}${propertySuffix}`;
   }
 
   async exportPdf(): Promise<void> {
     this.loading.set(true);
     try {
-      const { range, kpis, reservations, variableExpenses, fixedExpenses } =
-        await this.gatherData();
+      const { kpis, reservations, variableExpenses, fixedExpenses } = await this.gatherData();
       this.exportService.exportPdfMonthly(
         this.reportTitle(),
         kpis,
@@ -211,14 +252,26 @@ export class Reports {
     this.loading.set(true);
     try {
       const year = this.period.year();
-      const [reservations, variableExpenses, fixedExpenses, kpis] = await Promise.all([
-        this.incomeFacade.findAll({ year }),
-        this.variableFacade.findAll({ year }),
-        this.fixedFacade.findAll({ year }),
-        this.dashboardFacade.getKpis(12, year),
+      const propertyFilter = this.propertyFilter();
+      const [reservations, variableExpenses, fixedExpenses] = await Promise.all([
+        this.incomeFacade.findAll({ year, ...propertyFilter }),
+        this.variableFacade.findAll({ year, ...propertyFilter }),
+        this.fixedFacade.findAll({ year, ...propertyFilter }),
       ]);
+
+      let kpis;
+      if (!propertyFilter.propertyId) {
+        kpis = await this.dashboardFacade.getKpis(12, year);
+      } else {
+        const fixedTotal = fixedExpenses.reduce((sum, e) => sum + e.total, 0);
+        kpis = ReportKpiCalculator.fromData(reservations, variableExpenses, fixedTotal);
+      }
+
+      const propertySuffix = this.selectedPropertyName()
+        ? ` — ${this.selectedPropertyName()}`
+        : '';
       this.exportService.exportPdfMonthly(
-        `Reporte Anual ${year}`,
+        `Reporte Anual ${year}${propertySuffix}`,
         kpis,
         reservations,
         variableExpenses,
@@ -234,9 +287,14 @@ export class Reports {
   async exportExcel(): Promise<void> {
     this.loading.set(true);
     try {
-      const { range, kpis, reservations, variableExpenses, fixedExpenses } =
+      const { range, propertyName, kpis, reservations, variableExpenses, fixedExpenses } =
         await this.gatherData();
-      const filename = buildExportFilename('Reporte', range.dateFrom, range.dateTo);
+      const filename = buildExportFilename(
+        'Reporte',
+        range.dateFrom,
+        range.dateTo,
+        propertyName ?? undefined,
+      );
       this.exportService.exportExcel(
         kpis,
         reservations,
@@ -254,8 +312,13 @@ export class Reports {
   async exportCsv(): Promise<void> {
     this.loading.set(true);
     try {
-      const { range, reservations } = await this.gatherData();
-      const filename = buildExportFilename('Ingresos', range.dateFrom, range.dateTo);
+      const { range, propertyName, reservations } = await this.gatherData();
+      const filename = buildExportFilename(
+        'Ingresos',
+        range.dateFrom,
+        range.dateTo,
+        propertyName ?? undefined,
+      );
       this.exportService.exportCsv(
         reservations.map((r) => ({
           fecha: formatIsoToDdMmYyyy(r.checkInDate),

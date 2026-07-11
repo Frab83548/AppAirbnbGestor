@@ -10,12 +10,42 @@ import { formatIsoToDdMmYyyy } from '../../shared/utils/date.util';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
+  private readonly fixedConceptLabels: { key: keyof FixedExpense; label: string }[] = [
+    { key: 'buildingExpenses', label: 'Expensas' },
+    { key: 'electricity', label: 'Luz' },
+    { key: 'water', label: 'Agua' },
+    { key: 'gas', label: 'Gas' },
+    { key: 'internet', label: 'Internet' },
+    { key: 'municipality', label: 'Municipalidad' },
+    { key: 'others', label: 'Otros' },
+  ];
+
   private formatCurrency(value: number): string {
     return new Intl.NumberFormat('es-AR', {
       style: 'currency',
       currency: 'ARS',
       minimumFractionDigits: 0,
     }).format(value);
+  }
+
+  /** Una fila por concepto con monto > 0 (Expensas, Luz, etc.). */
+  private fixedExpenseRows(expenses: FixedExpense[]): string[][] {
+    const rows: string[][] = [];
+    for (const expense of expenses) {
+      const period = `${String(expense.month).padStart(2, '0')}/${expense.year}`;
+      for (const { key, label } of this.fixedConceptLabels) {
+        const amount = expense[key] as number;
+        if (amount > 0) {
+          rows.push([
+            period,
+            expense.propertyName ?? '',
+            label,
+            this.formatCurrency(amount),
+          ]);
+        }
+      }
+    }
+    return rows;
   }
 
   exportPdfMonthly(
@@ -62,8 +92,8 @@ export class ExportService {
 
     autoTable(doc, {
       startY: ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? finalY) + 10,
-      head: [['Gastos fijos', 'Propiedad', 'Total']],
-      body: fixedExpenses.map((e) => [`${e.month}/${e.year}`, e.propertyName ?? '', this.formatCurrency(e.total)]),
+      head: [['Periodo', 'Propiedad', 'Descripción', 'Monto']],
+      body: this.fixedExpenseRows(fixedExpenses),
     });
 
     doc.save(`${title.replace(/\s/g, '_')}.pdf`);

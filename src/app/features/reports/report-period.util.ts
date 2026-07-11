@@ -53,6 +53,14 @@ export function formatRangeLabel(dateFrom: string, dateTo: string): string {
   return `${fromLabel} – ${toLabel}`;
 }
 
-export function buildExportFilename(prefix: string, dateFrom: string, dateTo: string): string {
-  return `${prefix}_${dateFrom}_${dateTo}`.replace(/-/g, '');
+export function buildExportFilename(
+  prefix: string,
+  dateFrom: string,
+  dateTo: string,
+  propertyName?: string,
+): string {
+  const propertyPart = propertyName
+    ? `_${propertyName.replace(/[^a-zA-Z0-9]+/g, '_')}`
+    : '';
+  return `${prefix}${propertyPart}_${dateFrom}_${dateTo}`.replace(/-/g, '');
 }

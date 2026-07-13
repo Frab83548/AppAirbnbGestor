@@ -53,6 +53,27 @@ export function formatRangeLabel(dateFrom: string, dateTo: string): string {
   return `${fromLabel} – ${toLabel}`;
 }
 
+export function yearsInRange(dateFrom: string, dateTo: string): number[] {
+  const fromYear = parseIsoDateLocal(dateFrom).getFullYear();
+  const toYear = parseIsoDateLocal(dateTo).getFullYear();
+  const years: number[] = [];
+  for (let year = fromYear; year <= toYear; year++) {
+    years.push(year);
+  }
+  return years;
+}
+
+/** True si el mes calendario (month/year) intersecta el rango [dateFrom, dateTo]. */
+export function monthOverlapsRange(
+  month: number,
+  year: number,
+  dateFrom: string,
+  dateTo: string,
+): boolean {
+  const monthRange = getMonthRange(month, year);
+  return monthRange.dateFrom <= dateTo && monthRange.dateTo >= dateFrom;
+}
+
 export function buildExportFilename(
   prefix: string,
   dateFrom: string,

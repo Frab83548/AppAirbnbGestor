@@ -26,6 +26,10 @@
         <th mat-header-cell *matHeaderCellDef>Propiedad</th>
         <td mat-cell *matCellDef="let e" data-label="Propiedad"><strong>{{ e.propertyName }}</strong></td>
       </ng-container>
+      <ng-container matColumnDef="entryDate">
+        <th mat-header-cell *matHeaderCellDef>Fecha ingreso</th>
+        <td mat-cell *matCellDef="let e" data-label="Fecha ingreso">{{ formatEntryDate(e.createdAt) }}</td>
+      </ng-container>
       <ng-container matColumnDef="total">
         <th mat-header-cell *matHeaderCellDef>Total</th>
         <td mat-cell *matCellDef="let e" data-label="Total">{{ e.total | currencyArs }}</td>

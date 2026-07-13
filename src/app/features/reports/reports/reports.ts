@@ -27,9 +27,11 @@ import {
   formatRangeLabel,
   getMonthRange,
   getWeekRange,
+  monthOverlapsRange,
   ReportDateRange,
   ReportPeriodMode,
   shiftWeek,
+  yearsInRange,
 } from '../report-period.util';
 
 @Component({
@@ -66,7 +68,8 @@ export class Reports implements OnInit {
   readonly periodMode = signal<ReportPeriodMode>('monthly');
   readonly weekAnchor = signal(new Date());
   readonly properties = signal<Property[]>([]);
-  readonly selectedPropertyId = signal<string | null>(null);
+  readonly ALL_PROPERTIES = '';
+  readonly selectedPropertyId = signal('');
 
   readonly customRangeForm = this.fb.nonNullable.group({
     dateFrom: [new Date(new Date().getFullYear(), new Date().getMonth(), 1), Validators.required],
@@ -122,9 +125,9 @@ export class Reports implements OnInit {
       return 'Usa el selector de mes/año del encabezado o cambialo acá.';
     }
     if (mode === 'weekly') {
-      return 'Semana de lunes a domingo. Se suman los gastos fijos cargados dentro del rango.';
+      return 'Semana de lunes a domingo. Los gastos fijos incluyen los periodos que caen en el rango.';
     }
-    return 'Elegí fecha desde y hasta. Se suman los gastos fijos cargados dentro del rango.';
+    return 'Elegí fecha desde y hasta. Los gastos fijos incluyen los periodos que caen en el rango.';
   });
 
   ngOnInit(): void {
@@ -146,7 +149,7 @@ export class Reports implements OnInit {
     this.period.setPeriod(this.period.month(), year);
   }
 
-  onPropertyChange(propertyId: string | null): void {
+  onPropertyChange(propertyId: string): void {
     this.selectedPropertyId.set(propertyId);
   }
 
@@ -173,6 +176,21 @@ export class Reports implements OnInit {
     return propertyId ? { propertyId } : {};
   }
 
+  private async fetchFixedExpensesForRange(
+    range: ReportDateRange,
+    propertyFilter: { propertyId?: string },
+  ) {
+    const years = yearsInRange(range.dateFrom, range.dateTo);
+    const byYear = await Promise.all(
+      years.map((year) => this.fixedFacade.findAll({ year, ...propertyFilter })),
+    );
+    return byYear
+      .flat()
+      .filter((expense) =>
+        monthOverlapsRange(expense.month, expense.year, range.dateFrom, range.dateTo),
+      );
+  }
+
   private async gatherData() {
     const range = this.activeRange();
     if (!this.validateRange(range)) {
@@ -189,11 +207,7 @@ export class Reports implements OnInit {
         year: this.period.year(),
         ...propertyFilter,
       })
-      : this.fixedFacade.findAll({
-        createdFrom: range.dateFrom,
-        createdTo: range.dateTo,
-        ...propertyFilter,
-      });
+      : this.fetchFixedExpensesForRange(range, propertyFilter);
 
     const [reservations, variableExpenses, fixedExpenses] = await Promise.all([
       this.incomeFacade.findAll(dateFilters),

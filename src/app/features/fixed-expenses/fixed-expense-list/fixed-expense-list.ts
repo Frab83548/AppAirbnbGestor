@@ -8,6 +8,7 @@ import { PageHeader } from '../../../shared/ui/page-header/page-header';
 import { LoadingState } from '../../../shared/ui/loading-state/loading-state';
 import { EmptyState } from '../../../shared/ui/empty-state/empty-state';
 import { CurrencyArsPipe } from '../../../shared/pipes/currency-ars.pipe';
+import { formatTimestampToDdMmYyyy } from '../../../shared/utils/date.util';
 import { FixedExpenseFacade } from '../fixed-expense.facade';
 import { PeriodService } from '../../../core/layout/period.service';
 import { FixedExpense } from '../../../domain/models/expense.model';
@@ -41,8 +42,10 @@ export class FixedExpenseList {
   readonly loading = signal(true);
   readonly duplicating = signal(false);
   readonly expenses = signal<FixedExpense[]>([]);
+  readonly formatEntryDate = formatTimestampToDdMmYyyy;
   readonly displayedColumns = [
     'property',
+    'entryDate',
     'building',
     'electricity',
     'water',

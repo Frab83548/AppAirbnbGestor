@@ -25,7 +25,7 @@
         (selectionChange)="onPropertyChange($event.value)"
         aria-label="Filtrar por propiedad"
       >
-        <mat-option [value]="null">Todas las propiedades</mat-option>
+        <mat-option [value]="ALL_PROPERTIES">Todas las propiedades</mat-option>
         @for (p of properties(); track p.id) {
           <mat-option [value]="p.id">{{ p.name }}</mat-option>
         }

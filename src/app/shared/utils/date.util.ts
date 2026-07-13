@@ -20,3 +20,16 @@ export function formatIsoToDdMmYyyy(iso: string): string {
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
 }
+
+/** Convierte ISO timestamp (created_at) a DD/MM/YYYY en hora Argentina. */
+export function formatTimestampToDdMmYyyy(
+  iso: string,
+  timeZone = 'America/Argentina/Buenos_Aires',
+): string {
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(new Date(iso));
+}

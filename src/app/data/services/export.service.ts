@@ -6,7 +6,7 @@ import { DashboardKpis } from '../../domain/models/dashboard.model';
 import { Reservation } from '../../domain/models/reservation.model';
 import { VariableExpense } from '../../domain/models/expense.model';
 import { FixedExpense } from '../../domain/models/expense.model';
-import { formatIsoToDdMmYyyy } from '../../shared/utils/date.util';
+import { formatIsoToDdMmYyyy, formatTimestampToDdMmYyyy } from '../../shared/utils/date.util';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
@@ -32,12 +32,12 @@ export class ExportService {
   private fixedExpenseRows(expenses: FixedExpense[]): string[][] {
     const rows: string[][] = [];
     for (const expense of expenses) {
-      const period = `${String(expense.month).padStart(2, '0')}/${expense.year}`;
+      const entryDate = formatTimestampToDdMmYyyy(expense.createdAt);
       for (const { key, label } of this.fixedConceptLabels) {
         const amount = expense[key] as number;
         if (amount > 0) {
           rows.push([
-            period,
+            entryDate,
             expense.propertyName ?? '',
             label,
             this.formatCurrency(amount),
@@ -92,7 +92,7 @@ export class ExportService {
 
     autoTable(doc, {
       startY: ((doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable?.finalY ?? finalY) + 10,
-      head: [['Periodo', 'Propiedad', 'Descripción', 'Monto']],
+      head: [['Fecha', 'Propiedad', 'Descripción', 'Monto']],
       body: this.fixedExpenseRows(fixedExpenses),
     });
 
@@ -154,6 +154,7 @@ export class ExportService {
       wb,
       XLSX.utils.json_to_sheet(
         fixedExpenses.map((e) => ({
+          Fecha: formatTimestampToDdMmYyyy(e.createdAt),
           Propiedad: e.propertyName,
           Mes: e.month,
           Anio: e.year,

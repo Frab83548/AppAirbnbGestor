@@ -27,11 +27,9 @@ import {
   formatRangeLabel,
   getMonthRange,
   getWeekRange,
-  monthOverlapsRange,
   ReportDateRange,
   ReportPeriodMode,
   shiftWeek,
-  yearsInRange,
 } from '../report-period.util';
 
 @Component({
@@ -125,9 +123,9 @@ export class Reports implements OnInit {
       return 'Usa el selector de mes/año del encabezado o cambialo acá.';
     }
     if (mode === 'weekly') {
-      return 'Semana de lunes a domingo. Los gastos fijos incluyen los periodos que caen en el rango.';
+      return 'Semana de lunes a domingo. Se suman los gastos fijos cargados dentro del rango.';
     }
-    return 'Elegí fecha desde y hasta. Los gastos fijos incluyen los periodos que caen en el rango.';
+    return 'Elegí fecha desde y hasta. Se suman los gastos fijos cargados dentro del rango.';
   });
 
   ngOnInit(): void {
@@ -176,21 +174,6 @@ export class Reports implements OnInit {
     return propertyId ? { propertyId } : {};
   }
 
-  private async fetchFixedExpensesForRange(
-    range: ReportDateRange,
-    propertyFilter: { propertyId?: string },
-  ) {
-    const years = yearsInRange(range.dateFrom, range.dateTo);
-    const byYear = await Promise.all(
-      years.map((year) => this.fixedFacade.findAll({ year, ...propertyFilter })),
-    );
-    return byYear
-      .flat()
-      .filter((expense) =>
-        monthOverlapsRange(expense.month, expense.year, range.dateFrom, range.dateTo),
-      );
-  }
-
   private async gatherData() {
     const range = this.activeRange();
     if (!this.validateRange(range)) {
@@ -201,13 +184,18 @@ export class Reports implements OnInit {
     const propertyFilter = this.propertyFilter();
     const dateFilters = { dateFrom: range.dateFrom, dateTo: range.dateTo, ...propertyFilter };
 
+    // Mensual: por periodo contable; semanal/rango: por fecha de carga (created_at).
     const fixedQuery = mode === 'monthly'
       ? this.fixedFacade.findAll({
         month: this.period.month(),
         year: this.period.year(),
         ...propertyFilter,
       })
-      : this.fetchFixedExpensesForRange(range, propertyFilter);
+      : this.fixedFacade.findAll({
+        createdFrom: range.dateFrom,
+        createdTo: range.dateTo,
+        ...propertyFilter,
+      });
 
     const [reservations, variableExpenses, fixedExpenses] = await Promise.all([
       this.incomeFacade.findAll(dateFilters),

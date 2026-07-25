@@ -8,7 +8,7 @@ import { PageHeader } from '../../../shared/ui/page-header/page-header';
 import { LoadingState } from '../../../shared/ui/loading-state/loading-state';
 import { EmptyState } from '../../../shared/ui/empty-state/empty-state';
 import { CurrencyArsPipe } from '../../../shared/pipes/currency-ars.pipe';
-import { formatTimestampToDdMmYyyy } from '../../../shared/utils/date.util';
+import { formatIsoToDdMmYyyy } from '../../../shared/utils/date.util';
 import { FixedExpenseFacade } from '../fixed-expense.facade';
 import { PeriodService } from '../../../core/layout/period.service';
 import { FixedExpense } from '../../../domain/models/expense.model';
@@ -42,7 +42,7 @@ export class FixedExpenseList {
   readonly loading = signal(true);
   readonly duplicating = signal(false);
   readonly expenses = signal<FixedExpense[]>([]);
-  readonly formatEntryDate = formatTimestampToDdMmYyyy;
+  readonly formatEntryDate = formatIsoToDdMmYyyy;
   readonly displayedColumns = [
     'property',
     'entryDate',
@@ -90,8 +90,8 @@ export class FixedExpenseList {
 
   async deleteExpense(expense: FixedExpense): Promise<void> {
     const confirmed = await this.confirmService.confirm({
-      title: 'Eliminar gastos fijos',
-      message: `¿Seguro que querés eliminar los gastos fijos de "${expense.propertyName}"? Esta acción no se puede deshacer.`,
+      title: 'Eliminar carga de gastos fijos',
+      message: `¿Seguro que querés eliminar esta carga de "${expense.propertyName}" (${this.formatEntryDate(expense.entryDate)})? Esta acción no se puede deshacer.`,
       confirmText: 'Eliminar',
       danger: true,
     });

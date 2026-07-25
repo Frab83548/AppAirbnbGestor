@@ -6,7 +6,7 @@ import { DashboardKpis } from '../../domain/models/dashboard.model';
 import { Reservation } from '../../domain/models/reservation.model';
 import { VariableExpense } from '../../domain/models/expense.model';
 import { FixedExpense } from '../../domain/models/expense.model';
-import { formatIsoToDdMmYyyy, formatTimestampToDdMmYyyy } from '../../shared/utils/date.util';
+import { formatIsoToDdMmYyyy } from '../../shared/utils/date.util';
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
@@ -32,7 +32,7 @@ export class ExportService {
   private fixedExpenseRows(expenses: FixedExpense[]): string[][] {
     const rows: string[][] = [];
     for (const expense of expenses) {
-      const entryDate = formatTimestampToDdMmYyyy(expense.createdAt);
+      const entryDate = formatIsoToDdMmYyyy(expense.entryDate);
       for (const { key, label } of this.fixedConceptLabels) {
         const amount = expense[key] as number;
         if (amount > 0) {
@@ -154,7 +154,7 @@ export class ExportService {
       wb,
       XLSX.utils.json_to_sheet(
         fixedExpenses.map((e) => ({
-          Fecha: formatTimestampToDdMmYyyy(e.createdAt),
+          Fecha: formatIsoToDdMmYyyy(e.entryDate),
           Propiedad: e.propertyName,
           Mes: e.month,
           Anio: e.year,

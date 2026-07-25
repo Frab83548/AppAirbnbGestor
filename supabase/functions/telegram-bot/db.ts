@@ -73,6 +73,7 @@ export interface FixedExpensePayload {
   property_name: string;
   mes: number;
   anio: number;
+  fecha: string;
   conceptos_fijos: Partial<Record<FixedConcept, number>>;
 }
 
@@ -200,12 +201,15 @@ export async function insertFixedExpense(
     amounts[col] = conceptos[concept as FixedConcept] ?? 0;
   }
 
+  const entryDate = p.fecha;
+
   const { data: existing } = await getClient()
     .from("fixed_expenses")
     .select("id, building_expenses, electricity, water, gas, internet, municipality, others")
     .eq("property_id", p.property_id)
     .eq("month", p.mes)
     .eq("year", p.anio)
+    .eq("entry_date", entryDate)
     .maybeSingle();
 
   if (existing) {
@@ -233,6 +237,7 @@ export async function insertFixedExpense(
     property_id: p.property_id,
     month: p.mes,
     year: p.anio,
+    entry_date: entryDate,
     building_expenses: amounts.building_expenses,
     electricity: amounts.electricity,
     water: amounts.water,
@@ -323,12 +328,14 @@ export function buildFixedExpensePayload(
   const [yearStr, monthStr] = today.split("-");
   const mes = record.mes ?? Number(monthStr);
   const anio = record.anio ?? Number(yearStr);
+  const fecha = record.fecha ?? today;
 
   return {
     property_id: property.id,
     property_name: property.name,
     mes,
     anio,
+    fecha,
     conceptos_fijos: conceptos,
   };
 }

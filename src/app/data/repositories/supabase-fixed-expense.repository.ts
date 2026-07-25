@@ -16,6 +16,7 @@ interface FixedExpenseRow {
   property_id: string;
   month: number;
   year: number;
+  entry_date: string;
   building_expenses: number;
   electricity: number;
   water: number;
@@ -41,16 +42,18 @@ export class SupabaseFixedExpenseRepository implements IFixedExpenseRepository {
     let query = this.supabase
       .from('fixed_expenses')
       .select('*, properties(name)')
+      .order('entry_date', { ascending: false })
       .order('year', { ascending: false })
       .order('month', { ascending: false });
 
     if (filters?.propertyId) query = query.eq('property_id', filters.propertyId);
     if (filters?.month) query = query.eq('month', filters.month);
     if (filters?.year) query = query.eq('year', filters.year);
-    if (filters?.createdFrom) query = query.gte('created_at', filters.createdFrom);
-    if (filters?.createdTo) {
-      query = query.lte('created_at', `${filters.createdTo}T23:59:59.999`);
-    }
+
+    const entryFrom = filters?.entryDateFrom ?? filters?.createdFrom;
+    const entryTo = filters?.entryDateTo ?? filters?.createdTo;
+    if (entryFrom) query = query.gte('entry_date', entryFrom);
+    if (entryTo) query = query.lte('entry_date', entryTo);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -75,6 +78,7 @@ export class SupabaseFixedExpenseRepository implements IFixedExpenseRepository {
         property_id: dto.propertyId,
         month: dto.month,
         year: dto.year,
+        entry_date: dto.entryDate,
         building_expenses: dto.buildingExpenses,
         electricity: dto.electricity,
         water: dto.water,
@@ -97,6 +101,7 @@ export class SupabaseFixedExpenseRepository implements IFixedExpenseRepository {
     if (dto.propertyId !== undefined) payload['property_id'] = dto.propertyId;
     if (dto.month !== undefined) payload['month'] = dto.month;
     if (dto.year !== undefined) payload['year'] = dto.year;
+    if (dto.entryDate !== undefined) payload['entry_date'] = dto.entryDate;
     if (dto.buildingExpenses !== undefined) payload['building_expenses'] = dto.buildingExpenses;
     if (dto.electricity !== undefined) payload['electricity'] = dto.electricity;
     if (dto.water !== undefined) payload['water'] = dto.water;
@@ -145,6 +150,7 @@ export class SupabaseFixedExpenseRepository implements IFixedExpenseRepository {
       propertyName: row.properties?.name,
       month: row.month,
       year: row.year,
+      entryDate: row.entry_date ?? row.created_at.slice(0, 10),
       buildingExpenses: Number(row.building_expenses),
       electricity: Number(row.electricity),
       water: Number(row.water),

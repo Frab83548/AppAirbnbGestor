@@ -9,7 +9,11 @@ export interface FixedExpenseFilters {
   propertyId?: string;
   month?: number;
   year?: number;
+  entryDateFrom?: string;
+  entryDateTo?: string;
+  /** @deprecated Usar entryDateFrom */
   createdFrom?: string;
+  /** @deprecated Usar entryDateTo */
   createdTo?: string;
 }
 

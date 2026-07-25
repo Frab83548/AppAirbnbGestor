@@ -32,6 +32,7 @@ export interface FixedExpense {
   propertyName?: string;
   month: number;
   year: number;
+  entryDate: string;
   buildingExpenses: number;
   electricity: number;
   water: number;
@@ -50,6 +51,7 @@ export interface CreateFixedExpenseDto {
   propertyId: string;
   month: number;
   year: number;
+  entryDate: string;
   buildingExpenses: number;
   electricity: number;
   water: number;

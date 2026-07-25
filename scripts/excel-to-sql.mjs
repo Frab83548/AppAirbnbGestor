@@ -177,13 +177,11 @@ export function generateSql(data, config, sourceFile) {
   }
 
   for (const f of data.fixedExpenses) {
+    const entryDate = `${f.year}-${String(f.month).padStart(2, '0')}-01`;
     lines.push(
       `  -- Gastos fijos ${f.sourceSheet} ${f.month}/${f.year}`,
-      `  INSERT INTO fixed_expenses (property_id, month, year, building_expenses, electricity, water, gas, internet, municipality, others)`,
-      `  VALUES (v_property_id, ${f.month}, ${f.year}, ${f.building}, ${f.electricity}, ${f.water}, ${f.gas}, ${f.internet}, ${f.municipality}, ${f.others})`,
-      `  ON CONFLICT (property_id, month, year) DO UPDATE SET`,
-      `    building_expenses = EXCLUDED.building_expenses, electricity = EXCLUDED.electricity,`,
-      `    water = EXCLUDED.water, internet = EXCLUDED.internet, municipality = EXCLUDED.municipality;`,
+      `  INSERT INTO fixed_expenses (property_id, month, year, entry_date, building_expenses, electricity, water, gas, internet, municipality, others)`,
+      `  VALUES (v_property_id, ${f.month}, ${f.year}, '${entryDate}', ${f.building}, ${f.electricity}, ${f.water}, ${f.gas}, ${f.internet}, ${f.municipality}, ${f.others});`,
     );
   }
 

@@ -123,9 +123,9 @@ export class Reports implements OnInit {
       return 'Usa el selector de mes/año del encabezado o cambialo acá.';
     }
     if (mode === 'weekly') {
-      return 'Semana de lunes a domingo. Se suman los gastos fijos cargados dentro del rango.';
+      return 'Semana de lunes a domingo. Se suman las cargas de gastos fijos con fecha de ingreso dentro del rango.';
     }
-    return 'Elegí fecha desde y hasta. Se suman los gastos fijos cargados dentro del rango.';
+    return 'Elegí fecha desde y hasta. Se suman las cargas de gastos fijos con fecha de ingreso dentro del rango.';
   });
 
   ngOnInit(): void {
@@ -184,7 +184,7 @@ export class Reports implements OnInit {
     const propertyFilter = this.propertyFilter();
     const dateFilters = { dateFrom: range.dateFrom, dateTo: range.dateTo, ...propertyFilter };
 
-    // Mensual: por periodo contable; semanal/rango: por fecha de carga (created_at).
+    // Mensual: por periodo contable; semanal/rango: por fecha de ingreso (entry_date).
     const fixedQuery = mode === 'monthly'
       ? this.fixedFacade.findAll({
         month: this.period.month(),
@@ -192,8 +192,8 @@ export class Reports implements OnInit {
         ...propertyFilter,
       })
       : this.fixedFacade.findAll({
-        createdFrom: range.dateFrom,
-        createdTo: range.dateTo,
+        entryDateFrom: range.dateFrom,
+        entryDateTo: range.dateTo,
         ...propertyFilter,
       });
 
